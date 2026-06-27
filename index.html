@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pressbooks → Grav Helios Open Reader</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { darkMode: 'media' }</script>
+<style>
+  /* JS-toggled drag state */
+  .drop-zone.dragover { border-color: #60a5fa; background: #eff6ff; }
+  @media (prefers-color-scheme: dark) {
+    .drop-zone.dragover { border-color: #3b82f6; background: #1e3058; }
+  }
+  /* JS-toggled file-selected visibility */
+  .file-selected.visible { display: flex; }
+  /* Scoped tech-summary body prose */
+  .tech-summary-body p  { margin-bottom: 0.75rem; }
+  .tech-summary-body ol { padding-left: 1.25rem; margin-bottom: 0.75rem; }
+  .tech-summary-body li { margin-bottom: 0.25rem; }
+  .tech-summary-body code { font-size: 12px; background: #fafaf9; border: 1px solid #d6d3d1; border-radius: 3px; padding: 1px 4px; }
+  @media (prefers-color-scheme: dark) {
+    .tech-summary-body code { background: #211f1e; border-color: #57534e; }
+  }
+  /* Global focus ring */
+  :focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; border-radius: 4px; }
+  @media (prefers-color-scheme: dark) { :focus-visible { outline-color: #60a5fa; } }
+</style>
+</head>
+<body class="font-sans bg-stone-100 dark:bg-stone-900 text-stone-900 dark:text-stone-200 min-h-screen flex flex-col items-center py-8 px-4">
+
+<div class="w-full max-w-[600px]">
+
+  <div class="flex items-center gap-2.5 mb-4">
+    <div class="w-9 h-9 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center text-[19px] shrink-0" aria-hidden="true">📖</div>
+    <div>
+      <h1 class="text-base font-semibold">Pressbooks → Grav Helios Open Reader <span class="inline-block text-[11px] font-semibold px-[7px] py-px rounded-full bg-blue-100 dark:bg-[#1e3058] text-blue-700 dark:text-blue-400 align-middle ml-1 tracking-[0.02em]">v0.9.0 Beta</span></h1>
+      <div class="text-[13px] text-stone-500 dark:text-stone-400">Convert a Pressbooks XHTML export to a Grav pages folder for Grav Helios Open Reader</div>
+    </div>
+  </div>
+
+  <p class="text-[15px] text-stone-500 dark:text-stone-400 mb-5 leading-relaxed"><strong>A web-first reading experience for your Pressbooks content</strong> — <a href="https://demo.hibbittsdesign.org/grav-helios-open-reader/" class="text-blue-700 dark:text-blue-400">Grav Helios Open Reader</a> is a focused, self-hosted reader purpose-built for the web, with Save My Place, LMS embedding, and content stored as portable Markdown files.</p>
+
+  <nav aria-label="How it works">
+    <ol class="flex flex-col gap-2.5 mb-6 list-none p-0">
+      <li class="flex items-start gap-3 text-[15px] text-stone-500 dark:text-stone-400">
+        <div class="shrink-0 w-[22px] h-[22px] bg-blue-100 dark:bg-[#1e3058] text-blue-700 dark:text-blue-400 rounded-full text-xs font-semibold flex items-center justify-center mt-px" aria-hidden="true">1</div>
+        <span>From your Pressbooks dashboard, click <strong>Export</strong> in the left sidebar. In the <strong>Export Options</strong> panel, check <strong>XHTML</strong> and click <strong>Export Book</strong>. Alternatively, use the <strong>Download this book</strong> dropdown on the book cover page. Download the <code>.html</code> file.</span>
+      </li>
+      <li class="flex items-start gap-3 text-[15px] text-stone-500 dark:text-stone-400">
+        <div class="shrink-0 w-[22px] h-[22px] bg-blue-100 dark:bg-[#1e3058] text-blue-700 dark:text-blue-400 rounded-full text-xs font-semibold flex items-center justify-center mt-px" aria-hidden="true">2</div>
+        <span>Upload that file below and click <strong>Convert &amp; Download ZIP</strong>. A <code>pages/</code> folder structure ready for Grav will be downloaded.</span>
+      </li>
+      <li class="flex items-start gap-3 text-[15px] text-stone-500 dark:text-stone-400">
+        <div class="shrink-0 w-[22px] h-[22px] bg-blue-100 dark:bg-[#1e3058] text-blue-700 dark:text-blue-400 rounded-full text-xs font-semibold flex items-center justify-center mt-px" aria-hidden="true">3</div>
+        <span>Extract the ZIP and copy the <code>pages/</code> folder into your <a href="https://github.com/hibbitts-design/grav-skeleton-helios-open-reader" class="text-blue-700 dark:text-blue-400">Grav Helios Open Reader</a> installation.</span>
+      </li>
+      <li class="flex items-start gap-3 text-[15px] text-stone-500 dark:text-stone-400">
+        <div class="shrink-0 w-[22px] h-[22px] bg-blue-100 dark:bg-[#1e3058] text-blue-700 dark:text-blue-400 rounded-full text-xs font-semibold flex items-center justify-center mt-px" aria-hidden="true">4</div>
+        <span>In Grav Admin, go to <strong>Themes → Helios → Versioning → Version Labels</strong> and update each section label to match your book's section titles — these labels control the section card titles on the site. The included <code>versioning-labels.yaml</code> in the ZIP contains ready-to-paste labels for your book.</span>
+      </li>
+    </ol>
+  </nav>
+
+  <p class="text-[15px] text-stone-400 dark:text-stone-500 -mt-2 mb-5">New to Grav Helios Open Reader? The <a href="https://demo.hibbittsdesign.org/grav-helios-open-reader/readme" class="text-blue-600 dark:text-blue-400">ReadMe</a> covers installation, configuration, and getting started.</p>
+
+  <div id="error-box" class="rounded-lg px-[14px] py-[10px] text-sm gap-2 items-start mb-4 bg-red-50 dark:bg-[#3b0a0a] border border-red-200 dark:border-red-900 text-red-800 dark:text-red-300" style="display:none" role="alert" aria-live="assertive">
+    <span aria-hidden="true">⚠</span> <span id="error-text"></span>
+  </div>
+
+  <div class="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl p-6 mb-4">
+    <h2 class="text-[17px] font-semibold mb-1">Upload your Pressbooks export</h2>
+    <p class="text-sm text-stone-500 dark:text-stone-400 mb-5">Export your book from Pressbooks as XHTML, then upload the file below.</p>
+
+    <form method="POST" action="convert.php" enctype="multipart/form-data" id="convert-form">
+
+      <div class="drop-zone border-2 border-dashed border-stone-300 dark:border-stone-600 rounded-lg py-5 px-8 text-center cursor-pointer bg-stone-50 dark:bg-[#211f1e] transition-colors duration-150 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-[#1e3058]" id="drop-zone" role="button" tabindex="0" aria-label="Upload file — click or press Enter to browse">
+        <div class="text-[2rem] mb-2" aria-hidden="true">⬆</div>
+        <p class="text-[15px] font-medium mb-1">Drop your .html or .xhtml file here</p>
+        <p class="text-[13px] text-stone-400 dark:text-stone-500">or click to browse — max 50 MB</p>
+        <input type="file" name="xhtml" id="file-input" accept=".html,.xhtml" class="hidden">
+      </div>
+
+      <div class="file-selected hidden items-center gap-2.5 bg-blue-50 dark:bg-[#1e3058] border border-blue-200 dark:border-blue-700 rounded-lg px-[14px] py-[10px] mb-3" id="file-selected" aria-live="polite">
+        <span aria-hidden="true">📄</span>
+        <span class="text-sm font-medium text-blue-700 dark:text-blue-400 flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" id="file-name"></span>
+        <span class="text-[13px] text-stone-500 dark:text-stone-400 whitespace-nowrap" id="file-size"></span>
+        <button type="button" class="bg-transparent border-0 cursor-pointer text-stone-400 dark:text-stone-500 text-[17px] px-0.5 leading-none hover:text-stone-700 dark:hover:text-stone-300" id="clear-btn" title="Remove file" aria-label="Remove file">✕</button>
+      </div>
+
+      <div id="cover-section" class="hidden mb-4">
+        <label class="block text-[13px] text-stone-500 dark:text-stone-400 mb-1">
+          Cover image <span class="text-stone-400 dark:text-stone-500">(optional — upload if automatic download fails)</span>
+        </label>
+        <input type="file" name="cover_image" id="cover-input" accept=".jpg,.jpeg,.png,.gif,.webp"
+               class="text-[13px] text-stone-500 dark:text-stone-400 w-full">
+      </div>
+
+      <div class="flex gap-6 mb-5 mt-2 flex-wrap">
+        <div class="flex flex-col gap-[3px]">
+          <label class="flex items-center gap-[7px] text-[15px] cursor-pointer">
+            <input type="checkbox" name="skip_images" value="1" checked>
+            Skip image downloads
+          </label>
+          <span class="text-xs text-stone-400 dark:text-stone-500 pl-[21px]">Keep remote image URLs; download locally after import. Note: some servers block direct image downloads.</span>
+        </div>
+        <div class="flex flex-col gap-[3px]">
+          <label class="flex items-center gap-[7px] text-[15px] cursor-pointer">
+            <input type="checkbox" name="figure_html" value="1" checked>
+            Use HTML figure/figcaption for captioned images
+          </label>
+          <span class="text-xs text-stone-400 dark:text-stone-500 pl-[21px]">Outputs semantic <code>&lt;figure&gt;</code>/<code>&lt;figcaption&gt;</code> HTML. Uncheck for standard Markdown image + italic caption.</span>
+        </div>
+      </div>
+
+      <button type="submit" class="w-full py-[10px] text-[15px] font-medium bg-blue-700 dark:bg-blue-600 text-white border border-blue-800 dark:border-blue-500 rounded-lg cursor-pointer transition-colors duration-150 enabled:hover:bg-blue-800 dark:enabled:hover:bg-blue-700 disabled:opacity-40 disabled:cursor-default" id="convert-btn" disabled>
+        Convert &amp; Download ZIP
+      </button>
+
+    </form>
+
+    <details class="mt-6 border-t border-stone-200 dark:border-stone-700 pt-4">
+      <summary class="text-[13px] text-stone-400 dark:text-stone-500 cursor-pointer select-none hover:text-stone-500 dark:hover:text-stone-400">What exactly does this do?</summary>
+      <div class="tech-summary-body mt-3 text-[13px] text-stone-500 dark:text-stone-400 leading-[1.7]">
+        <p>It's a self-contained PHP web app running on the server. You upload a Pressbooks XHTML export, it parses the structure and converts everything to Markdown, then hands you back a ZIP ready to drop into Grav.</p>
+        <p><strong>What's under the hood?</strong><br>
+        PHP 8+ with <code>DOMDocument</code>/<code>DOMXPath</code> for HTML parsing · <code>league/html-to-markdown</code> for HTML → Markdown conversion · <code>ZipArchive</code> for packaging · Vanilla HTML/CSS/JS frontend — no framework, no build step.</p>
+        <p><strong>What happens to your file?</strong></p>
+        <ol>
+          <li>Your upload is validated server-side — file type, size (50 MB max), and structure are all checked before anything runs</li>
+          <li>The book structure is parsed: metadata, front matter, parts, chapters, and back matter are all extracted, along with internal links</li>
+          <li>Each page's HTML is cleaned up — footnotes, videos, definition lists, callout blocks, and links are all handled before conversion to Markdown</li>
+          <li>A <code>pages/</code> folder structure is assembled with proper YAML frontmatter and a ready-to-paste <code>versioning-labels.yaml</code></li>
+          <li>The ZIP is streamed back to your browser and the temporary file is immediately deleted from the server</li>
+        </ol>
+        <p><strong>What's in the ZIP?</strong><br>
+        Numbered <code>section-N/</code> folders, each with a <code>section.md</code> and numbered <code>section-page.md</code> files for every chapter · A <code>versioning-labels.yaml</code> with your book's section titles ready to paste into Grav · Image downloads are optional; Cloudflare-protected hosts can't be downloaded server-side.</p>
+      </div>
+    </details>
+  </div>
+
+  <div class="text-xs text-stone-400 dark:text-stone-500 text-center mt-8">
+    Built by <a href="https://hibbittsdesign.org" class="text-stone-400 dark:text-stone-500">Paul Hibbitts</a> and <a href="https://claude.ai/code" class="text-stone-400 dark:text-stone-500">Claude Code</a> ·
+    Requires <a href="https://getgrav.org/downloads/skeletons" class="text-stone-400 dark:text-stone-500">Grav Helios Open Reader</a> ·
+    <a href="https://github.com/hibbitts-design/grav-skeleton-helios-open-reader" class="text-stone-400 dark:text-stone-500">GitHub</a>
+  </div>
+
+</div>
+
+<script>
+const dropZone     = document.getElementById('drop-zone');
+const fileInput    = document.getElementById('file-input');
+const fileSelected = document.getElementById('file-selected');
+const fileName     = document.getElementById('file-name');
+const fileSize     = document.getElementById('file-size');
+const clearBtn     = document.getElementById('clear-btn');
+const convertBtn   = document.getElementById('convert-btn');
+const coverSection = document.getElementById('cover-section');
+const coverInput   = document.getElementById('cover-input');
+
+function formatBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(1) + ' MB';
+}
+
+const validExts = ['.html', '.xhtml'];
+
+function validExtension(file) {
+  return validExts.some(ext => file.name.toLowerCase().endsWith(ext));
+}
+
+const errorBox  = document.getElementById('error-box');
+const errorText = document.getElementById('error-text');
+
+function showFile(file) {
+  errorBox.style.display = 'none';
+  if (file.size > 50 * 1024 * 1024) {
+    rejectFile('File exceeds the 50 MB limit. Please check your export.');
+    return;
+  }
+  dropZone.style.display = 'none';
+  fileSelected.classList.add('visible');
+  coverSection.classList.remove('hidden');
+  fileName.textContent = file.name;
+  fileSize.textContent = formatBytes(file.size);
+  convertBtn.disabled = false;
+  clearBtn.focus();
+}
+
+function clearFile() {
+  fileInput.value = '';
+  dropZone.style.display = '';
+  fileSelected.classList.remove('visible');
+  coverSection.classList.add('hidden');
+  coverInput.value = '';
+  convertBtn.disabled = true;
+  dropZone.focus();
+}
+
+function rejectFile(msg) {
+  // Hide then re-show to force aria-live re-announcement on repeated invalid drops
+  errorBox.style.display = 'none';
+  requestAnimationFrame(() => {
+    errorText.textContent = msg;
+    errorBox.style.display = 'flex';
+  });
+}
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); } });
+fileInput.addEventListener('change', () => {
+  const file = fileInput.files[0];
+  if (!file) return;
+  if (!validExtension(file)) { fileInput.value = ''; rejectFile('Please select a .html or .xhtml file exported from Pressbooks.'); return; }
+  showFile(file);
+});
+clearBtn.addEventListener('click', clearFile);
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  if (!validExtension(file)) { rejectFile('Please drop a .html or .xhtml file exported from Pressbooks.'); return; }
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  fileInput.files = dt.files;
+  showFile(file);
+});
+
+document.getElementById('convert-form').addEventListener('submit', () => {
+  convertBtn.disabled = true;
+  convertBtn.textContent = 'Converting…';
+
+  const resetBtn = (success = false) => {
+    convertBtn.textContent = 'Convert & Download ZIP';
+    convertBtn.disabled = false;
+    if (success) {
+      convertBtn.textContent = '✓ Conversion complete';
+      setTimeout(() => { convertBtn.textContent = 'Convert & Download ZIP'; }, 5000);
+    }
+  };
+
+  // Poll for the cookie the server sets when the download begins
+  const poll = setInterval(() => {
+    if (document.cookie.split(';').some(c => c.trim().startsWith('download_ready='))) {
+      clearInterval(poll);
+      document.cookie = 'download_ready=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+      resetBtn(true);
+    }
+  }, 500);
+
+  // Fallback: reset after 60 s in case the cookie is never detected
+  setTimeout(() => { clearInterval(poll); resetBtn(); }, 60000);
+});
+
+const errParam = new URLSearchParams(window.location.search).get('error');
+if (errParam) {
+  document.getElementById('error-text').textContent = errParam;
+  document.getElementById('error-box').style.display = 'flex';
+}
+</script>
+
+</body>
+</html>

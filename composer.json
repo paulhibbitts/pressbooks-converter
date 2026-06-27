@@ -1,0 +1,10 @@
+{
+    "require": {
+        "league/html-to-markdown": "^5.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "PB\\": "src/"
+        }
+    }
+}
