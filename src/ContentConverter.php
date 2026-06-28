@@ -388,6 +388,21 @@ class ContentConverter
         $callouts = [];
         $counter  = 0;
 
+        // Multi-paragraph blockquotes (3+ paragraphs) → [excerpt] shortcode
+        foreach (iterator_to_array($xpath->query('//blockquote')) as $bq) {
+            if ($xpath->query('./p', $bq)->length < 3) {
+                continue;
+            }
+            $inner = '';
+            foreach ($bq->childNodes as $child) {
+                $inner .= $dom->saveHTML($child);
+            }
+            $counter++;
+            $ph            = "%%CALLOUT{$counter}%%";
+            $callouts[$ph] = "[excerpt]\n" . $this->toMarkdown($inner) . "\n[/excerpt]";
+            $bq->parentNode->replaceChild($dom->createTextNode($ph), $bq);
+        }
+
         // Learning objectives (content div only, skip header)
         foreach (iterator_to_array($xpath->query("//*[{$this->xc('textbox--learning-objectives')}]")) as $div) {
             $contentEl = $xpath->query(".//*[{$this->xc('textbox__content')}]", $div)->item(0);
