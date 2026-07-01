@@ -124,7 +124,8 @@ class ZipBuilder
         $this->writeSection(
             1, 'front-matter', 'Front Matter',
             'Accessibility, about, preface, and acknowledgements.',
-            null, null, $pages
+            null, null, $pages,
+            $this->sectionLabel !== 'Section' ? '' : null
         );
     }
 
@@ -159,16 +160,21 @@ class ZipBuilder
                 $pages[] = [$ch['title'], $content];
             }
 
-            $slugTitle = $part['title'];
+            $slugTitle     = $part['title'];
+            $labelOverride = null;
             if (preg_match('/^(?:Module|Chapter|Part|Unit)\s+\d+[.:]?\s*/i', $part['title'], $m)) {
                 $slugTitle = trim(substr($part['title'], strlen($m[0])));
             } elseif ($this->sectionLabel !== 'Section' && preg_match('/^(\d+)[.:]\s+/i', $part['title'], $m)) {
                 $slugTitle = trim(substr($part['title'], strlen($m[0])));
+            } elseif (preg_match('/^(Appendix\s+\w+)(?:[.:]\s*|\s+)/i', $part['title'], $m)) {
+                $labelOverride = ucwords(strtolower($m[1]));
+                $slugTitle     = trim(substr($part['title'], strlen($m[0])));
             }
 
             $this->writeSection(
                 $secNum, Helpers::slugify($slugTitle ?: $part['title']), $part['title'],
-                null, $objectivesText, $partBody, $pages
+                null, $objectivesText, $partBody, $pages,
+                $labelOverride
             );
         }
     }
@@ -195,7 +201,8 @@ class ZipBuilder
         $this->writeSection(
             $secNum, 'back-matter', 'Back Matter',
             'Appendices, bibliography, and versioning history.',
-            null, null, $pages
+            null, null, $pages,
+            $this->sectionLabel !== 'Section' ? '' : null
         );
     }
 
@@ -220,11 +227,15 @@ class ZipBuilder
         ?string $secDesc,
         ?string $objectivesText,
         ?string $secBody,
-        array   $pages
+        array   $pages,
+        ?string $sectionLabelOverride = null
     ): void {
         $secFolder = sprintf('pages/%02d.section-%d', $secNum, $secNum);
 
         $fm = ['---', 'title: ' . Helpers::yamlStr($secTitle)];
+        if ($sectionLabelOverride !== null) {
+            $fm[] = 'section_label: ' . Helpers::yamlStr($sectionLabelOverride);
+        }
         if ($secDesc) {
             $fm[] = 'description: ' . Helpers::yamlStr($secDesc);
         }
