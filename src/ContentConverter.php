@@ -68,14 +68,14 @@ class ContentConverter
 
         // Fix escaped bullets inside shortcodes
         $result = preg_replace_callback(
-            '/\[(?:objectives|example|reflection|announcement)[^\]]*\].*?\[\/(?:objectives|example|reflection|announcement)\]/s',
+            '/\[(?:objectives|example|reflection|announcement|references)[^\]]*\].*?\[\/(?:objectives|example|reflection|announcement|references)\]/s',
             fn($m) => str_replace('\*', '-', $m[0]),
             $result
         );
 
         // Fix setext headings inside shortcodes
         $result = preg_replace_callback(
-            '/\[(?:announcement|example|reflection|objectives)[^\]]*\].*?\[\/(?:announcement|example|reflection|objectives)\]/s',
+            '/\[(?:announcement|example|reflection|objectives|references)[^\]]*\].*?\[\/(?:announcement|example|reflection|objectives|references)\]/s',
             [$this, 'fixSetextHeadings'],
             $result
         );
@@ -89,21 +89,21 @@ class ContentConverter
 
         // Ensure closing shortcode tags are on their own line (content before)
         $result = preg_replace(
-            '/(\S)\[\/(announcement|objectives|example|reflection|key-takeaways|definition|case-study|exercise|project-brief|feedback-requested|process-note)\]/',
+            '/(\S)\[\/(announcement|objectives|example|reflection|key-takeaways|definition|case-study|exercise|project-brief|feedback-requested|process-note|references)\]/',
             "$1\n[/$2]",
             $result
         );
 
         // Ensure closing shortcode tags are on their own line (content after, with optional space)
         $result = preg_replace(
-            '/\[\/(announcement|objectives|example|reflection|key-takeaways|definition|case-study|exercise|project-brief|feedback-requested|process-note)\][ \t]*(\S)/',
+            '/\[\/(announcement|objectives|example|reflection|key-takeaways|definition|case-study|exercise|project-brief|feedback-requested|process-note|references)\][ \t]*(\S)/',
             "[/$1]\n$2",
             $result
         );
 
         // Remove leading space before opening shortcode tags (league whitespace artifact)
         $result = preg_replace(
-            '/^ \[(announcement|objectives|example|reflection|key-takeaways|definition|case-study|exercise|project-brief|feedback-requested|process-note)\]/m',
+            '/^ \[(announcement|objectives|example|reflection|key-takeaways|definition|case-study|exercise|project-brief|feedback-requested|process-note|references)\]/m',
             '[$1]',
             $result
         );
@@ -506,6 +506,8 @@ class ContentConverter
             $newTag = 'example';
         } elseif (preg_match('/^Questions to Consider/i', $first)) {
             $newTag = 'reflection';
+        } elseif (preg_match('/^###?\s*References\b/i', $first)) {
+            $newTag = 'references';
         } else {
             $newTag = $tag;
         }
