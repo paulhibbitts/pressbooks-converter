@@ -42,9 +42,15 @@ class ContentConverter
 
         $result = $this->toMarkdown($html);
 
-        // Restore figure placeholders
+        // Restore figure placeholders — also substitute inside callout bodies,
+        // because fixCallouts() calls toMarkdown() internally, which embeds
+        // %%FIG%% text literally into the stored callout strings.
         foreach ($figures as $ph => $figHtml) {
             $result = str_replace($ph, "\n" . $figHtml . "\n", $result);
+            foreach ($callouts as &$shortcode) {
+                $shortcode = str_replace($ph, "\n" . $figHtml . "\n", $shortcode);
+            }
+            unset($shortcode);
         }
 
         // Restore callout placeholders (reverse order: outer placeholders expand first,
@@ -466,6 +472,24 @@ class ContentConverter
         $result = preg_replace('/^(\s*)\* /m', '$1- ', $result);
 
         $result = html_entity_decode($result, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        // Map Windows-1252 numeric entities (&#128;–&#159;) to proper Unicode.
+        // html_entity_decode treats these as control characters under ENT_HTML5
+        // but Pressbooks sources use them as em dashes, ellipses, etc.
+        static $cp1252 = [
+            128 => "\xe2\x82\xac", 130 => "\xe2\x80\x9a", 131 => "\xc6\x92",
+            132 => "\xe2\x80\x9e", 133 => "\xe2\x80\xa6", 134 => "\xe2\x80\xa0",
+            135 => "\xe2\x80\xa1", 136 => "\xcb\x86",     137 => "\xe2\x80\xb0",
+            138 => "\xc5\xa0",     139 => "\xe2\x80\xb9", 140 => "\xc5\x92",
+            142 => "\xc5\xbd",     145 => "\xe2\x80\x98", 146 => "\xe2\x80\x99",
+            147 => "\xe2\x80\x9c", 148 => "\xe2\x80\x9d", 149 => "\xe2\x80\xa2",
+            150 => "\xe2\x80\x93", 151 => "\xe2\x80\x94", 152 => "\xcb\x9c",
+            153 => "\xe2\x84\xa2", 154 => "\xc5\xa1",     155 => "\xe2\x80\xba",
+            156 => "\xc5\x93",     158 => "\xc5\xbe",     159 => "\xc5\xb8",
+        ];
+        $result = preg_replace_callback('/&#(12[89]|1[345]\d);/', function ($m) use ($cp1252) {
+            $n = (int) $m[1];
+            return $cp1252[$n] ?? $m[0];
+        }, $result);
         $result = str_replace("\xc2\xa0", ' ', $result); // non-breaking space
         $result = preg_replace('/\n{3,}/', "\n\n", $result);
         return trim($result);
