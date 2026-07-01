@@ -167,7 +167,7 @@ class ZipBuilder
             } elseif ($this->sectionLabel !== 'Section' && preg_match('/^(\d+)[.:]\s+/i', $part['title'], $m)) {
                 $slugTitle = trim(substr($part['title'], strlen($m[0])));
             } elseif (preg_match('/^(Appendix\s+\w+)(?:[.:]\s*|\s+)/i', $part['title'], $m)) {
-                $labelOverride = ucwords(strtolower($m[1]));
+                $labelOverride = '';
                 $slugTitle     = trim(substr($part['title'], strlen($m[0])));
             }
 
