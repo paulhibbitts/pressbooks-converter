@@ -92,6 +92,7 @@ class ZipBuilder
         }
         if ($this->sectionLabel !== 'Section') {
             $lines[] = 'section_label: ' . $this->sectionLabel;
+            $lines[] = 'show_section_label: false';
         }
         if ($p->bookLicense && $authorsStr) {
             $parts = [$p->bookTitle . ' by ' . $authorsStr];
@@ -123,8 +124,7 @@ class ZipBuilder
         $this->writeSection(
             1, 'front-matter', 'Front Matter',
             'Accessibility, about, preface, and acknowledgements.',
-            null, null, $pages,
-            $this->sectionLabel !== 'Section' ? ' ' : null
+            null, null, $pages
         );
     }
 
@@ -159,21 +159,16 @@ class ZipBuilder
                 $pages[] = [$ch['title'], $content];
             }
 
-            $displayNum   = null;
-            $displayTitle = $part['title'];
-            if (preg_match('/^(?:Module|Chapter|Part|Unit)\s+(\d+)[.:]?\s*/i', $part['title'], $m)) {
-                $displayNum   = $m[1];
-                $displayTitle = trim(substr($part['title'], strlen($m[0])));
+            $slugTitle = $part['title'];
+            if (preg_match('/^(?:Module|Chapter|Part|Unit)\s+\d+[.:]?\s*/i', $part['title'], $m)) {
+                $slugTitle = trim(substr($part['title'], strlen($m[0])));
             } elseif ($this->sectionLabel !== 'Section' && preg_match('/^(\d+)[.:]\s+/i', $part['title'], $m)) {
-                // Plain numeric prefix (e.g. "15. The book in a nutshell") in a keyword-labelled book
-                $displayNum   = $m[1];
-                $displayTitle = trim(substr($part['title'], strlen($m[0])));
+                $slugTitle = trim(substr($part['title'], strlen($m[0])));
             }
 
             $this->writeSection(
-                $secNum, Helpers::slugify($displayTitle ?: $part['title']), $displayTitle,
-                null, $objectivesText, $partBody, $pages,
-                $displayNum
+                $secNum, Helpers::slugify($slugTitle ?: $part['title']), $part['title'],
+                null, $objectivesText, $partBody, $pages
             );
         }
     }
@@ -200,8 +195,7 @@ class ZipBuilder
         $this->writeSection(
             $secNum, 'back-matter', 'Back Matter',
             'Appendices, bibliography, and versioning history.',
-            null, null, $pages,
-            $this->sectionLabel !== 'Section' ? ' ' : null
+            null, null, $pages
         );
     }
 
@@ -226,14 +220,11 @@ class ZipBuilder
         ?string $secDesc,
         ?string $objectivesText,
         ?string $secBody,
-        array   $pages,
-        ?string $displaySectionNum = null
+        array   $pages
     ): void {
-        $secFolder   = sprintf('pages/%02d.section-%d', $secNum, $secNum);
-        $displayNum  = $displaySectionNum ?? (string) $secNum;
+        $secFolder = sprintf('pages/%02d.section-%d', $secNum, $secNum);
 
-        $fm = ['---', 'title: ' . Helpers::yamlStr($secTitle),
-               'section_number: ' . Helpers::yamlStr($displayNum)];
+        $fm = ['---', 'title: ' . Helpers::yamlStr($secTitle)];
         if ($secDesc) {
             $fm[] = 'description: ' . Helpers::yamlStr($secDesc);
         }
