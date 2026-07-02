@@ -452,7 +452,9 @@ class ContentConverter
         // textbox--exercises so the placeholder is visible when that handler calls saveHTML()
         foreach (iterator_to_array($xpath->query("//*[{$this->xc('pdf')}]//*[{$this->xc('textbox')}]")) as $div) {
             $headerEl = $xpath->query(".//*[{$this->xc('textbox__header')}]", $div)->item(0);
-            $rawTitle = $headerEl ? trim($headerEl->textContent) : '';
+            $strongEl = $xpath->query('.//strong[1]|.//b[1]', $div)->item(0);
+            $rawTitle = $headerEl ? trim($headerEl->textContent)
+                      : ($strongEl   ? trim($strongEl->textContent) : '');
             if ($rawTitle) {
                 // Strip leading "H5P:" and optional subtitle (e.g. "TEST YOUR LEARNING:") then title-case
                 $cleaned = preg_replace('/^H5P:\s*(?:[^:]+:\s*)?/i', '', $rawTitle);
@@ -468,17 +470,44 @@ class ContentConverter
             $div->parentNode->replaceChild($dom->createTextNode($ph), $div);
         }
 
-        // Activity boxes (textbox--exercises) — wrap in [exercise] with the box title;
-        // ExerciseShortcode renders full body content when block elements are present
+        // Activity boxes (textbox--exercises) — wrap in [exercise] only when an H5P embed
+        // placeholder is present; otherwise unwrap to plain heading + content
         foreach (iterator_to_array($xpath->query("//*[{$this->xc('textbox--exercises')}]")) as $div) {
-            $headerEl  = $xpath->query(".//*[{$this->xc('textbox__header')}]", $div)->item(0);
-            $contentEl = $xpath->query(".//*[{$this->xc('textbox__content')}]", $div)->item(0);
-            $title     = $headerEl ? trim($headerEl->textContent) : 'Interactive Activity';
-            $bodyText  = $contentEl ? $this->toMarkdown($dom->saveHTML($contentEl)) : '';
-            $counter++;
-            $ph            = "%%CALLOUT{$counter}%%";
-            $callouts[$ph] = "[exercise title=\"{$title}\"]\n{$bodyText}\n[/exercise]";
-            $div->parentNode->replaceChild($dom->createTextNode($ph), $div);
+            $headerEl   = $xpath->query(".//*[{$this->xc('textbox__header')}]", $div)->item(0);
+            $contentEl  = $xpath->query(".//*[{$this->xc('textbox__content')}]", $div)->item(0);
+            $htmlContent = $contentEl ? $dom->saveHTML($contentEl) : '';
+
+            // Check if any placeholder in this content resolves to an [h5p] embed
+            $hasH5pEmbed = false;
+            if (preg_match_all('/%%CALLOUT\{\d+\}%%/', $htmlContent, $phMatches)) {
+                foreach ($phMatches[0] as $candidate) {
+                    if (isset($callouts[$candidate]) && str_starts_with($callouts[$candidate], '[h5p ')) {
+                        $hasH5pEmbed = true;
+                        break;
+                    }
+                }
+            }
+
+            if ($hasH5pEmbed) {
+                $title    = $headerEl ? trim($headerEl->textContent) : 'Interactive Activity';
+                $bodyText = $this->toMarkdown($htmlContent);
+                $counter++;
+                $ph            = "%%CALLOUT{$counter}%%";
+                $callouts[$ph] = "[exercise title=\"{$title}\"]\n{$bodyText}\n[/exercise]";
+                $div->parentNode->replaceChild($dom->createTextNode($ph), $div);
+            } else {
+                $frag = $dom->createDocumentFragment();
+                if ($headerEl) {
+                    $h2 = $xpath->query('.//h2', $headerEl)->item(0);
+                    $frag->appendChild(($h2 ?? $headerEl)->cloneNode(true));
+                }
+                if ($contentEl) {
+                    foreach (iterator_to_array($contentEl->childNodes) as $child) {
+                        $frag->appendChild($child->cloneNode(true));
+                    }
+                }
+                $div->parentNode->replaceChild($frag, $div);
+            }
         }
 
         // All remaining textboxes
