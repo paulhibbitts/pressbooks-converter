@@ -134,7 +134,7 @@ class ZipBuilder
         if ($p->bookUrl) {
             $announcementBody .= '[Source Pressbooks content](' . $p->bookUrl . ")\n\n";
         }
-        $announcementBody .= "*Note: Helios Open Reader supports embedded video, audio, and H5P activities. This converted Pressbooks book may contain links to some of these items rather than embedded content.*\n\n";
+        $announcementBody .= "*Note: [Grav Helios Open Reader](https://www.hibbittsdesign.org/Grav-Helios-Open-Reader-3560615470e080a79958c9c7dcd5d9a1) supports embedded video, audio, and H5P activities. This converted Pressbooks book may contain links to some of these items rather than embedded content.*\n\n";
 
         if ($announcementBody) {
             $annoTitle = str_replace('"', '&quot;', $p->bookTitle . ' — Pressbooks Import');
