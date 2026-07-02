@@ -455,9 +455,9 @@ class ContentConverter
                     }
                     $ancestor = $ancestor->parentNode;
                 }
-                $callouts[$ph] = $insideExercises
-                    ? "<a href=\"{$url}\">View H5P activity online ↗</a>"
-                    : "[exercise title=\"{$title}\"]\n<a href=\"{$url}\">View H5P activity online</a>\n[/exercise]";
+                // Always produce a bare link — standalone activities outside a textbox--exercises
+                // container render as plain links; the textbox--exercises handler wraps in [exercise]
+                $callouts[$ph] = "<a href=\"{$url}\">View H5P activity online ↗</a>";
             }
             $h5pCallouts[$ph] = true;
 

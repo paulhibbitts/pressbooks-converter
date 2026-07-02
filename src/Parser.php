@@ -92,6 +92,23 @@ class Parser
                 $wpPos = strpos($parsed['path'], '/wp-content/');
                 if ($wpPos !== false) {
                     $this->bookUrl = $parsed['scheme'] . '://' . $parsed['host'] . substr($parsed['path'], 0, $wpPos + 1);
+                } else {
+                    // Multisite hosts store uploads under /app/uploads/ — derive slug from internal links instead
+                    $host = $parsed['scheme'] . '://' . $parsed['host'];
+                    $slugCounts = [];
+                    foreach ($this->xpath->query('//a[@href]') as $a) {
+                        $href = $a->getAttribute('href');
+                        if (str_starts_with($href, $host . '/')) {
+                            $slug = explode('/', ltrim(parse_url($href, PHP_URL_PATH), '/'))[0];
+                            if ($slug && !in_array($slug, ['app', 'wp-content', 'wp-admin', 'wp-json'], true)) {
+                                $slugCounts[$slug] = ($slugCounts[$slug] ?? 0) + 1;
+                            }
+                        }
+                    }
+                    if ($slugCounts) {
+                        arsort($slugCounts);
+                        $this->bookUrl = $host . '/' . array_key_first($slugCounts) . '/';
+                    }
                 }
             }
         }
