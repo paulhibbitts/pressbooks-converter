@@ -441,10 +441,23 @@ class ContentConverter
                           . rtrim($parsed['path'], '/') . '/wp-admin/admin-ajax.php?action=h5p_embed&id=' . $m[1];
                 $this->h5pEmbeds[] = ['source' => $url, 'embed' => $embedUrl];
                 $callouts[$ph]     = "[h5p url=\"{$embedUrl}\"]";
+            } elseif ($xpath->query("ancestor::*[{$this->xc('textbox--exercises')}]", $div)->length > 0) {
+                // Inside a textbox--exercises box — that handler will add the [exercise] wrapper
+                $callouts[$ph] = "<a href=\"{$url}\">View H5P activity online</a>";
             } else {
                 $callouts[$ph] = "[exercise title=\"{$title}\"]\n<a href=\"{$url}\">View H5P activity online</a>\n[/exercise]";
             }
 
+            $div->parentNode->replaceChild($dom->createTextNode($ph), $div);
+        }
+
+        // Pressbooks print-only fallbacks: textboxes inside a .pdf wrapper — must run before
+        // textbox--exercises so the placeholder is visible when that handler calls saveHTML()
+        foreach (iterator_to_array($xpath->query("//*[{$this->xc('pdf')}]//*[{$this->xc('textbox')}]")) as $div) {
+            $bodyText = $this->toMarkdown($this->bodyHtml($div));
+            $counter++;
+            $ph            = "%%CALLOUT{$counter}%%";
+            $callouts[$ph] = "[details summary=\"Text version of activity\"]\n{$bodyText}\n[/details]";
             $div->parentNode->replaceChild($dom->createTextNode($ph), $div);
         }
 
@@ -480,17 +493,6 @@ class ContentConverter
 
         // All remaining textboxes
         foreach (iterator_to_array($xpath->query("//*[{$this->xc('textbox')}]")) as $div) {
-            // Textboxes inside a .pdf wrapper are Pressbooks print-only fallbacks for H5P
-            // and other interactive content — wrap in a collapsible [details] block so the
-            // text alternative is accessible but hidden by default
-            if ($xpath->query("ancestor::*[{$this->xc('pdf')}]", $div)->length > 0) {
-                $bodyText = $this->toMarkdown($this->bodyHtml($div));
-                $counter++;
-                $ph            = "%%CALLOUT{$counter}%%";
-                $callouts[$ph] = "[details summary=\"Text version of activity\"]\n{$bodyText}\n[/details]";
-                $div->parentNode->replaceChild($dom->createTextNode($ph), $div);
-                continue;
-            }
             $headerEl  = $xpath->query(".//*[{$this->xc('textbox__header')}]", $div)->item(0);
             $contentEl = $xpath->query(".//*[{$this->xc('textbox__content')}]", $div)->item(0);
 
