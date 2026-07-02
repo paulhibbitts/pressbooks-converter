@@ -448,6 +448,23 @@ class ContentConverter
             $div->parentNode->replaceChild($dom->createTextNode($ph), $div);
         }
 
+        // Activity boxes (textbox--exercises) — unwrap to plain heading + content
+        foreach (iterator_to_array($xpath->query("//*[{$this->xc('textbox--exercises')}]")) as $div) {
+            $frag      = $dom->createDocumentFragment();
+            $headerEl  = $xpath->query(".//*[{$this->xc('textbox__header')}]", $div)->item(0);
+            $contentEl = $xpath->query(".//*[{$this->xc('textbox__content')}]", $div)->item(0);
+            if ($headerEl) {
+                $h2 = $xpath->query('.//h2', $headerEl)->item(0);
+                $frag->appendChild(($h2 ?? $headerEl)->cloneNode(true));
+            }
+            if ($contentEl) {
+                foreach (iterator_to_array($contentEl->childNodes) as $child) {
+                    $frag->appendChild($child->cloneNode(true));
+                }
+            }
+            $div->parentNode->replaceChild($frag, $div);
+        }
+
         // All remaining textboxes
         foreach (iterator_to_array($xpath->query("//*[{$this->xc('textbox')}]")) as $div) {
             $headerEl  = $xpath->query(".//*[{$this->xc('textbox__header')}]", $div)->item(0);
