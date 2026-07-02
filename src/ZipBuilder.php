@@ -128,9 +128,6 @@ class ZipBuilder
         if ($metaParts) {
             $announcementBody .= implode(' | ', $metaParts) . "\n\n";
         }
-        if ($p->bookAbout) {
-            $announcementBody .= trim($p->bookAbout) . "\n\n";
-        }
         if ($p->bookUrl) {
             $announcementBody .= '[View original on Pressbooks](' . $p->bookUrl . ")\n\n";
         }
@@ -139,6 +136,9 @@ class ZipBuilder
 
         $annoTitle = str_replace('"', '&quot;', $p->bookTitle . ' — Imported from Pressbooks');
         $body = "[announcement title=\"{$annoTitle}\"]\n\n{$announcementBody}[/announcement]\n";
+        if ($p->bookAbout) {
+            $body .= "\n" . trim($p->bookAbout) . "\n";
+        }
 
         $content = implode("\n", $lines) . "\n\n" . $body;
         $this->addFile('pages/00.sections/section-list.md', $content);
