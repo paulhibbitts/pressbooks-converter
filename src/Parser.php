@@ -12,6 +12,7 @@ class Parser
     public string $bookLicense    = '';
     public string $bookLicenseUrl = '';
     public string $bookCoverUrl   = '';
+    public string $bookUrl        = '';
 
     // Each entry: ['id' => string, 'title' => string, 'html' => string]
     public array $frontMatters = [];
@@ -83,6 +84,17 @@ class Parser
         $this->bookYear       = $meta['pb-copyright-year'] ?? '';
         $this->bookLicenseRaw = $meta['pb-book-license'] ?? '';
         $this->bookCoverUrl   = $meta['pb-cover-image'] ?? '';
+
+        // Derive book base URL from cover image path (e.g. https://host/bookslug/wp-content/...)
+        if ($this->bookCoverUrl) {
+            $parsed = parse_url($this->bookCoverUrl);
+            if (!empty($parsed['scheme']) && !empty($parsed['host']) && !empty($parsed['path'])) {
+                $wpPos = strpos($parsed['path'], '/wp-content/');
+                if ($wpPos !== false) {
+                    $this->bookUrl = $parsed['scheme'] . '://' . $parsed['host'] . substr($parsed['path'], 0, $wpPos + 1);
+                }
+            }
+        }
 
         if (!$this->bookTitle) {
             $this->warnings[] = 'no book title found in metadata — using "Publication"';

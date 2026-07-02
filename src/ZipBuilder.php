@@ -50,6 +50,7 @@ class ZipBuilder
         $this->buildParts();
         $this->buildBackMatter();
         $this->buildVersioningConfig();
+        $this->buildConversionNotes();
 
         $this->warnings = array_merge($this->warnings, $this->converter->warnings);
 
@@ -108,7 +109,41 @@ class ZipBuilder
         }
         $lines[] = '---';
 
-        $content = implode("\n", $lines) . "\n\n" . trim($p->bookAbout) . "\n";
+        // Build announcement block with book metadata and source link
+        $metaParts = [];
+        if ($authorsStr) {
+            $metaParts[] = '**Authors:** ' . $authorsStr;
+        }
+        if ($p->bookLicense) {
+            $metaParts[] = '**License:** ' . $p->bookLicense;
+        }
+        $pageCount = count($p->frontMatters)
+                   + array_sum(array_map(fn($part) => count($part['chapters']), $p->parts))
+                   + count($p->backMatters);
+        if ($pageCount > 0) {
+            $metaParts[] = '**' . $pageCount . ' pages**';
+        }
+
+        $announcementBody = '';
+        if ($metaParts) {
+            $announcementBody .= implode(' | ', $metaParts) . "\n\n";
+        }
+        if ($p->bookAbout) {
+            $announcementBody .= trim($p->bookAbout) . "\n\n";
+        }
+        if ($p->bookUrl) {
+            $announcementBody .= '[Source Pressbooks content](' . $p->bookUrl . ")\n\n";
+        }
+        $announcementBody .= "**Note:** Helios Open Reader supports embedded video, audio, and H5P activities. This converted Pressbooks book may contain links to some of these items rather than embedded content.\n\n";
+
+        if ($announcementBody) {
+            $annoTitle = str_replace('"', '&quot;', $p->bookTitle . ' — Pressbooks Import');
+            $body = "[announcement title=\"{$annoTitle}\"]\n\n{$announcementBody}[/announcement]\n";
+        } else {
+            $body = trim($p->bookAbout) . "\n";
+        }
+
+        $content = implode("\n", $lines) . "\n\n" . $body;
         $this->addFile('pages/00.sections/section-list.md', $content);
     }
 
@@ -344,6 +379,82 @@ class ZipBuilder
         }
         $this->imageFailures[] = $url;
         return null;
+    }
+
+    private function buildConversionNotes(): void
+    {
+        $p = $this->parser;
+
+        $chapterCount = array_sum(array_map(fn($part) => count($part['chapters']), $p->parts));
+        $pageCount    = count($p->frontMatters) + $chapterCount + count($p->backMatters);
+
+        $lines = [
+            'Conversion Notes',
+            '================',
+            'Generated: ' . date('Y-m-d'),
+            '',
+            'Book: ' . $p->bookTitle,
+        ];
+        if ($p->bookAuthors) {
+            $lines[] = 'Authors: ' . $this->formatAuthors($p->bookAuthors);
+        }
+        if ($p->bookLicense) {
+            $lines[] = 'License: ' . $p->bookLicense;
+        }
+        if ($p->bookUrl) {
+            $lines[] = 'Source:  ' . $p->bookUrl;
+        }
+        $lines[] = '';
+        $lines[] = 'Structure';
+        $lines[] = '---------';
+        $lines[] = '  Front matter:   ' . count($p->frontMatters) . ' page(s)';
+        $lines[] = '  Parts/sections: ' . count($p->parts);
+        $lines[] = '  Chapters:       ' . $chapterCount . ' page(s)';
+        $lines[] = '  Back matter:    ' . count($p->backMatters) . ' page(s)';
+        $lines[] = '  Total:          ' . $pageCount . ' page(s)';
+        $lines[] = '';
+        $lines[] = 'Conversion Settings';
+        $lines[] = '-------------------';
+        $lines[] = '  Images:  ' . ($this->skipImages
+            ? 'kept as remote URLs — may break if source site goes offline'
+            : 'downloaded and bundled in ZIP');
+        $lines[] = '  H5P:     ' . ($this->embedH5p
+            ? 'embedded via [h5p] shortcode (see h5p-embeds.txt)'
+            : 'linked to original source');
+        $lines[] = '  YouTube: left as external links — Pressbooks exports do not include video URLs';
+        $lines[] = '';
+        $lines[] = 'Known Limitations';
+        $lines[] = '-----------------';
+        $lines[] = '  - Footnotes/endnotes may appear as raw HTML — review in Grav admin';
+        $lines[] = '  - Complex tables may need manual cleanup';
+        $lines[] = '  - Math/LaTeX rendering depends on your Grav MathJax plugin configuration';
+        $lines[] = '  - YouTube and other oEmbed content links to the original Pressbooks page';
+        $lines[] = '';
+        $lines[] = 'Media Support';
+        $lines[] = '-------------';
+        $lines[] = '  Helios Open Reader supports embedded video, audio, and H5P activities,';
+        $lines[] = '  but converted Pressbooks content may contain links to these items rather';
+        $lines[] = '  than actual embeds. Review each page and replace links with the appropriate';
+        $lines[] = '  shortcode where needed (e.g. [h5p url="..."] for H5P activities).';
+
+        if ($this->warnings) {
+            $lines[] = '';
+            $lines[] = 'Warnings';
+            $lines[] = '--------';
+            foreach ($this->warnings as $w) {
+                $lines[] = '  - ' . $w;
+            }
+        }
+        if ($this->errors) {
+            $lines[] = '';
+            $lines[] = 'Errors';
+            $lines[] = '------';
+            foreach ($this->errors as $e) {
+                $lines[] = '  - ' . $e;
+            }
+        }
+
+        $this->addFile('conversion-notes.txt', implode("\n", $lines) . "\n");
     }
 
     private function buildVersioningConfig(): void
