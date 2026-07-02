@@ -448,29 +448,47 @@ class ContentConverter
             $div->parentNode->replaceChild($dom->createTextNode($ph), $div);
         }
 
-        // Activity boxes (textbox--exercises) — unwrap to plain heading + content
+        // Activity boxes (textbox--exercises) — wrap in [exercise] if they contain an H5P
+        // activity (interactive-content already replaced with a placeholder), otherwise
+        // unwrap to a plain heading + content
         foreach (iterator_to_array($xpath->query("//*[{$this->xc('textbox--exercises')}]")) as $div) {
-            $frag      = $dom->createDocumentFragment();
             $headerEl  = $xpath->query(".//*[{$this->xc('textbox__header')}]", $div)->item(0);
             $contentEl = $xpath->query(".//*[{$this->xc('textbox__content')}]", $div)->item(0);
-            if ($headerEl) {
-                $h2 = $xpath->query('.//h2', $headerEl)->item(0);
-                $frag->appendChild(($h2 ?? $headerEl)->cloneNode(true));
-            }
-            if ($contentEl) {
-                foreach (iterator_to_array($contentEl->childNodes) as $child) {
-                    $frag->appendChild($child->cloneNode(true));
+            $title     = $headerEl ? trim($headerEl->textContent) : '';
+            $hasH5p    = $contentEl && str_contains($dom->saveHTML($contentEl), '%%CALLOUT');
+
+            if ($hasH5p && $title) {
+                $bodyText = $contentEl ? $this->toMarkdown($dom->saveHTML($contentEl)) : '';
+                $counter++;
+                $ph            = "%%CALLOUT{$counter}%%";
+                $callouts[$ph] = "[exercise title=\"{$title}\"]\n{$bodyText}\n[/exercise]";
+                $div->parentNode->replaceChild($dom->createTextNode($ph), $div);
+            } else {
+                $frag = $dom->createDocumentFragment();
+                if ($headerEl) {
+                    $h2 = $xpath->query('.//h2', $headerEl)->item(0);
+                    $frag->appendChild(($h2 ?? $headerEl)->cloneNode(true));
                 }
+                if ($contentEl) {
+                    foreach (iterator_to_array($contentEl->childNodes) as $child) {
+                        $frag->appendChild($child->cloneNode(true));
+                    }
+                }
+                $div->parentNode->replaceChild($frag, $div);
             }
-            $div->parentNode->replaceChild($frag, $div);
         }
 
         // All remaining textboxes
         foreach (iterator_to_array($xpath->query("//*[{$this->xc('textbox')}]")) as $div) {
-            // Skip textboxes inside a .pdf wrapper — Pressbooks uses these as print-only
-            // fallbacks (hidden on screen via CSS) for H5P and other interactive content
+            // Textboxes inside a .pdf wrapper are Pressbooks print-only fallbacks for H5P
+            // and other interactive content — wrap in a collapsible [details] block so the
+            // text alternative is accessible but hidden by default
             if ($xpath->query("ancestor::*[{$this->xc('pdf')}]", $div)->length > 0) {
-                $div->parentNode->removeChild($div);
+                $bodyText = $this->toMarkdown($this->bodyHtml($div));
+                $counter++;
+                $ph            = "%%CALLOUT{$counter}%%";
+                $callouts[$ph] = "[details summary=\"Text version of activity\"]\n{$bodyText}\n[/details]";
+                $div->parentNode->replaceChild($dom->createTextNode($ph), $div);
                 continue;
             }
             $headerEl  = $xpath->query(".//*[{$this->xc('textbox__header')}]", $div)->item(0);
