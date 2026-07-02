@@ -458,22 +458,17 @@ class ContentConverter
             $div->parentNode->replaceChild($dom->createTextNode($ph), $div);
         }
 
-        // Activity boxes (textbox--exercises) — always unwrap to heading + content so that
-        // nested shortcodes ([h5p], [details]) render correctly at the top level
+        // Activity boxes (textbox--exercises) — wrap in [exercise] with the box title;
+        // ExerciseShortcode renders full body content when block elements are present
         foreach (iterator_to_array($xpath->query("//*[{$this->xc('textbox--exercises')}]")) as $div) {
             $headerEl  = $xpath->query(".//*[{$this->xc('textbox__header')}]", $div)->item(0);
             $contentEl = $xpath->query(".//*[{$this->xc('textbox__content')}]", $div)->item(0);
-            $frag = $dom->createDocumentFragment();
-            if ($headerEl) {
-                $h2 = $xpath->query('.//h2', $headerEl)->item(0);
-                $frag->appendChild(($h2 ?? $headerEl)->cloneNode(true));
-            }
-            if ($contentEl) {
-                foreach (iterator_to_array($contentEl->childNodes) as $child) {
-                    $frag->appendChild($child->cloneNode(true));
-                }
-            }
-            $div->parentNode->replaceChild($frag, $div);
+            $title     = $headerEl ? trim($headerEl->textContent) : 'Interactive Activity';
+            $bodyText  = $contentEl ? $this->toMarkdown($dom->saveHTML($contentEl)) : '';
+            $counter++;
+            $ph            = "%%CALLOUT{$counter}%%";
+            $callouts[$ph] = "[exercise title=\"{$title}\"]\n{$bodyText}\n[/exercise]";
+            $div->parentNode->replaceChild($dom->createTextNode($ph), $div);
         }
 
         // All remaining textboxes
