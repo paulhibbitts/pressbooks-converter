@@ -495,7 +495,7 @@ class ContentConverter
 
             // Check if any placeholder in this content came from the H5P handler
             $hasH5pEmbed = false;
-            if (preg_match_all('/%%CALLOUT\{\d+\}%%/', $htmlContent, $phMatches)) {
+            if (preg_match_all('/%%CALLOUT\d+%%/', $htmlContent, $phMatches)) {
                 foreach ($phMatches[0] as $candidate) {
                     if (isset($h5pCallouts[$candidate])) {
                         $hasH5pEmbed = true;
