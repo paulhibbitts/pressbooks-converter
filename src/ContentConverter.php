@@ -441,9 +441,6 @@ class ContentConverter
                           . rtrim($parsed['path'], '/') . '/wp-admin/admin-ajax.php?action=h5p_embed&id=' . $m[1];
                 $this->h5pEmbeds[] = ['source' => $url, 'embed' => $embedUrl];
                 $callouts[$ph]     = "[h5p url=\"{$embedUrl}\"]";
-            } elseif ($xpath->query("ancestor::*[{$this->xc('textbox--exercises')}]", $div)->length > 0) {
-                // Inside a textbox--exercises box — that handler will add the [exercise] wrapper
-                $callouts[$ph] = "<a href=\"{$url}\">View H5P activity online</a>";
             } else {
                 $callouts[$ph] = "[exercise title=\"{$title}\"]\n<a href=\"{$url}\">View H5P activity online</a>\n[/exercise]";
             }
@@ -461,34 +458,22 @@ class ContentConverter
             $div->parentNode->replaceChild($dom->createTextNode($ph), $div);
         }
 
-        // Activity boxes (textbox--exercises) — wrap in [exercise] if they contain an H5P
-        // activity (interactive-content already replaced with a placeholder), otherwise
-        // unwrap to a plain heading + content
+        // Activity boxes (textbox--exercises) — always unwrap to heading + content so that
+        // nested shortcodes ([h5p], [details]) render correctly at the top level
         foreach (iterator_to_array($xpath->query("//*[{$this->xc('textbox--exercises')}]")) as $div) {
             $headerEl  = $xpath->query(".//*[{$this->xc('textbox__header')}]", $div)->item(0);
             $contentEl = $xpath->query(".//*[{$this->xc('textbox__content')}]", $div)->item(0);
-            $title     = $headerEl ? trim($headerEl->textContent) : '';
-            $hasH5p    = $contentEl && str_contains($dom->saveHTML($contentEl), '%%CALLOUT');
-
-            if ($hasH5p && $title) {
-                $bodyText = $contentEl ? $this->toMarkdown($dom->saveHTML($contentEl)) : '';
-                $counter++;
-                $ph            = "%%CALLOUT{$counter}%%";
-                $callouts[$ph] = "[exercise title=\"{$title}\"]\n{$bodyText}\n[/exercise]";
-                $div->parentNode->replaceChild($dom->createTextNode($ph), $div);
-            } else {
-                $frag = $dom->createDocumentFragment();
-                if ($headerEl) {
-                    $h2 = $xpath->query('.//h2', $headerEl)->item(0);
-                    $frag->appendChild(($h2 ?? $headerEl)->cloneNode(true));
-                }
-                if ($contentEl) {
-                    foreach (iterator_to_array($contentEl->childNodes) as $child) {
-                        $frag->appendChild($child->cloneNode(true));
-                    }
-                }
-                $div->parentNode->replaceChild($frag, $div);
+            $frag = $dom->createDocumentFragment();
+            if ($headerEl) {
+                $h2 = $xpath->query('.//h2', $headerEl)->item(0);
+                $frag->appendChild(($h2 ?? $headerEl)->cloneNode(true));
             }
+            if ($contentEl) {
+                foreach (iterator_to_array($contentEl->childNodes) as $child) {
+                    $frag->appendChild($child->cloneNode(true));
+                }
+            }
+            $div->parentNode->replaceChild($frag, $div);
         }
 
         // All remaining textboxes
