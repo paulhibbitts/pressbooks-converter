@@ -6,12 +6,15 @@ class ZipBuilder
     private Parser           $parser;
     private ContentConverter $converter;
     private bool             $skipImages;
+    private bool             $embedH5p;
 
     public array $warnings       = [];
     public array $errors         = [];
     public array $imageFailures  = [];
     public int   $fileCount      = 0;
     public array $sectionLabels  = [];
+
+    private array $allH5pEmbeds = [];
 
     private array   $zipFiles = []; // zipPath => string content
     private array   $zipBin   = []; // zipPath => binary content (images)
@@ -28,11 +31,12 @@ class ZipBuilder
         $this->coverImageFilename = $filename;
     }
 
-    public function __construct(Parser $parser, bool $skipImages = true, bool $figureHtml = true)
+    public function __construct(Parser $parser, bool $skipImages = true, bool $figureHtml = true, bool $embedH5p = false)
     {
         $this->parser     = $parser;
         $this->skipImages = $skipImages;
-        $this->converter  = new ContentConverter($parser->linkMap, $figureHtml);
+        $this->embedH5p   = $embedH5p;
+        $this->converter  = new ContentConverter($parser->linkMap, $figureHtml, $embedH5p);
     }
 
     // Build the zip and return the path to the temp file
@@ -118,6 +122,7 @@ class ZipBuilder
                 $this->errors[] = "failed to convert front-matter page \"{$fm['title']}\": " . $e->getMessage();
                 $content = '> **Conversion error:** ' . $e->getMessage() . "\n";
             }
+            $this->harvestH5pEmbeds($fm['title']);
             $pages[] = [$fm['title'], $content];
         }
 
@@ -157,6 +162,7 @@ class ZipBuilder
                     $this->errors[] = "failed to convert chapter \"{$ch['title']}\": " . $e->getMessage();
                     $content = '> **Conversion error:** ' . $e->getMessage() . "\n";
                 }
+                $this->harvestH5pEmbeds($ch['title']);
                 $pages[] = [$ch['title'], $content];
             }
 
@@ -195,6 +201,7 @@ class ZipBuilder
                 $this->errors[] = "failed to convert back-matter page \"{$bm['title']}\": " . $e->getMessage();
                 $content = '> **Conversion error:** ' . $e->getMessage() . "\n";
             }
+            $this->harvestH5pEmbeds($bm['title']);
             $pages[] = [$bm['title'], $content];
         }
 
@@ -385,11 +392,41 @@ class ZipBuilder
             $zip->addFromString('pages/images-not-downloaded.txt', implode("\n", $this->imageFailures) . "\n");
         }
 
+        // Add H5P embed manifest if any were found
+        if ($this->allH5pEmbeds) {
+            $lines = [
+                'H5P Embeds',
+                '==========',
+                'Open each embed URL in a browser to verify it shows the activity before installing.',
+                '',
+            ];
+            $currentPage = null;
+            foreach ($this->allH5pEmbeds as $entry) {
+                if ($entry['page'] !== $currentPage) {
+                    if ($currentPage !== null) {
+                        $lines[] = '';
+                    }
+                    $lines[]     = $entry['page'];
+                    $currentPage = $entry['page'];
+                }
+                $lines[] = '  Embed:  ' . $entry['embed'];
+                $lines[] = '  Source: ' . $entry['source'];
+            }
+            $zip->addFromString('h5p-embeds.txt', implode("\n", $lines) . "\n");
+        }
+
         $zip->close();
         return $tmp;
     }
 
     // ── Misc helpers ──────────────────────────────────────────────────────────
+
+    private function harvestH5pEmbeds(string $pageTitle): void
+    {
+        foreach ($this->converter->h5pEmbeds as $embed) {
+            $this->allH5pEmbeds[] = ['page' => $pageTitle, 'source' => $embed['source'], 'embed' => $embed['embed']];
+        }
+    }
 
     private function formatAuthors(array $authors): string
     {

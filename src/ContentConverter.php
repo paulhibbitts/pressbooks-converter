@@ -8,13 +8,16 @@ class ContentConverter
 {
     private array        $linkMap;
     private bool         $figureHtml;
+    private bool         $embedH5p;
     private HtmlConverter $md;
-    public  array        $warnings = [];
+    public  array        $warnings  = [];
+    public  array        $h5pEmbeds = [];
 
-    public function __construct(array $linkMap, bool $figureHtml = true)
+    public function __construct(array $linkMap, bool $figureHtml = true, bool $embedH5p = false)
     {
         $this->linkMap    = $linkMap;
         $this->figureHtml = $figureHtml;
+        $this->embedH5p   = $embedH5p;
         $this->md         = new HtmlConverter([
             'header_style'            => 'atx',
             'suppress_errors'         => true,
@@ -27,6 +30,7 @@ class ContentConverter
     // Main pipeline: HTML string → Markdown string
     public function convert(string $html): string
     {
+        $this->h5pEmbeds = [];
         // Strip Pressbooks decorative indicator icons (new-tab, download) — small <img> inside <a>
         $html = $this->stripLinkIcons($html);
 
@@ -429,8 +433,18 @@ class ContentConverter
             $url    = $firstA->getAttribute('href');
             $title  = htmlspecialchars($firstA->getAttribute('title') ?: 'Interactive Activity', ENT_QUOTES, 'UTF-8');
             $counter++;
-            $ph            = "%%CALLOUT{$counter}%%";
-            $callouts[$ph] = "[exercise title=\"{$title}\"]\n<a href=\"{$url}\">View H5P activity online</a>\n[/exercise]";
+            $ph = "%%CALLOUT{$counter}%%";
+
+            if ($this->embedH5p && preg_match('/#h5p-(\d+)$/i', $url, $m)) {
+                $parsed   = parse_url($url);
+                $embedUrl = $parsed['scheme'] . '://' . $parsed['host']
+                          . rtrim($parsed['path'], '/') . '/wp-admin/admin-ajax.php?action=h5p_embed&id=' . $m[1];
+                $this->h5pEmbeds[] = ['source' => $url, 'embed' => $embedUrl];
+                $callouts[$ph]     = "[h5p url=\"{$embedUrl}\"]";
+            } else {
+                $callouts[$ph] = "[exercise title=\"{$title}\"]\n<a href=\"{$url}\">View H5P activity online</a>\n[/exercise]";
+            }
+
             $div->parentNode->replaceChild($dom->createTextNode($ph), $div);
         }
 

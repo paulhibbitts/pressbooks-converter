@@ -111,6 +111,13 @@
           </label>
           <span class="text-xs text-stone-400 dark:text-stone-500 pl-[21px]">Outputs semantic <code>&lt;figure&gt;</code>/<code>&lt;figcaption&gt;</code> HTML. Uncheck for standard Markdown image + italic caption.</span>
         </div>
+        <div class="flex flex-col gap-[3px]">
+          <label class="flex items-center gap-[7px] text-[15px] cursor-pointer">
+            <input type="checkbox" name="embed_h5p" value="1">
+            Embed H5P activities
+          </label>
+          <span class="text-xs text-stone-400 dark:text-stone-500 pl-[21px]">Replace H5P placeholder links with embedded shortcodes. A fallback link and <code>h5p-embeds.txt</code> are included in the ZIP so you can verify each embed URL before installing. Requires the book to remain publicly accessible at its original Pressbooks URL.</span>
+        </div>
       </div>
 
       <button type="submit" class="w-full py-[10px] text-[15px] font-medium bg-blue-700 dark:bg-blue-600 text-white border border-blue-800 dark:border-blue-500 rounded-lg cursor-pointer transition-colors duration-150 enabled:hover:bg-blue-800 dark:enabled:hover:bg-blue-700 disabled:opacity-40 disabled:cursor-default" id="convert-btn" disabled>
