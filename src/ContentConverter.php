@@ -467,6 +467,12 @@ class ContentConverter
 
         // All remaining textboxes
         foreach (iterator_to_array($xpath->query("//*[{$this->xc('textbox')}]")) as $div) {
+            // Skip textboxes inside a .pdf wrapper — Pressbooks uses these as print-only
+            // fallbacks (hidden on screen via CSS) for H5P and other interactive content
+            if ($xpath->query("ancestor::*[{$this->xc('pdf')}]", $div)->length > 0) {
+                $div->parentNode->removeChild($div);
+                continue;
+            }
             $headerEl  = $xpath->query(".//*[{$this->xc('textbox__header')}]", $div)->item(0);
             $contentEl = $xpath->query(".//*[{$this->xc('textbox__content')}]", $div)->item(0);
 
