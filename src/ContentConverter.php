@@ -451,10 +451,20 @@ class ContentConverter
         // Pressbooks print-only fallbacks: textboxes inside a .pdf wrapper — must run before
         // textbox--exercises so the placeholder is visible when that handler calls saveHTML()
         foreach (iterator_to_array($xpath->query("//*[{$this->xc('pdf')}]//*[{$this->xc('textbox')}]")) as $div) {
+            $headerEl = $xpath->query(".//*[{$this->xc('textbox__header')}]", $div)->item(0);
+            $rawTitle = $headerEl ? trim($headerEl->textContent) : '';
+            if ($rawTitle) {
+                // Strip leading "H5P:" and optional subtitle (e.g. "TEST YOUR LEARNING:") then title-case
+                $cleaned = preg_replace('/^H5P:\s*(?:[^:]+:\s*)?/i', '', $rawTitle);
+                $cleaned = mb_convert_case(mb_strtolower($cleaned), MB_CASE_TITLE, 'UTF-8');
+                $summary = 'Text version of: ' . htmlspecialchars($cleaned, ENT_QUOTES, 'UTF-8');
+            } else {
+                $summary = 'Text version of activity';
+            }
             $bodyText = $this->toMarkdown($this->bodyHtml($div));
             $counter++;
             $ph            = "%%CALLOUT{$counter}%%";
-            $callouts[$ph] = "[details summary=\"Text version of activity\"]\n{$bodyText}\n[/details]";
+            $callouts[$ph] = "[details summary=\"{$summary}\"]\n{$bodyText}\n[/details]";
             $div->parentNode->replaceChild($dom->createTextNode($ph), $div);
         }
 
