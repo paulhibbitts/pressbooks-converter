@@ -419,7 +419,7 @@ class ZipBuilder
             ? 'kept as remote URLs — may break if source site goes offline'
             : 'downloaded and bundled in ZIP');
         $lines[] = '  H5P:     ' . ($this->embedH5p
-            ? 'embedded via [h5p] shortcode (see h5p-embeds.txt)'
+            ? 'embedded via [h5p] shortcode' . ($this->allH5pEmbeds ? ' (see H5P Embeds section below)' : '')
             : 'linked to original source');
         $lines[] = '  YouTube: left as external links — Pressbooks exports do not include video URLs';
         $lines[] = '';
@@ -451,6 +451,23 @@ class ZipBuilder
             $lines[] = '------';
             foreach ($this->errors as $e) {
                 $lines[] = '  - ' . $e;
+            }
+        }
+
+        if ($this->allH5pEmbeds) {
+            $lines[] = '';
+            $lines[] = 'H5P Embeds';
+            $lines[] = '----------';
+            $lines[] = 'Open each embed URL in a browser to verify it shows the activity before installing.';
+            $currentPage = null;
+            foreach ($this->allH5pEmbeds as $entry) {
+                if ($entry['page'] !== $currentPage) {
+                    $lines[]     = '';
+                    $lines[]     = $entry['page'];
+                    $currentPage = $entry['page'];
+                }
+                $lines[] = '  Embed:  ' . $entry['embed'];
+                $lines[] = '  Source: ' . $entry['source'];
             }
         }
 
@@ -501,29 +518,6 @@ class ZipBuilder
         // Add failed image URLs as a text file if any
         if ($this->imageFailures) {
             $zip->addFromString('pages/images-not-downloaded.txt', implode("\n", $this->imageFailures) . "\n");
-        }
-
-        // Add H5P embed manifest if any were found
-        if ($this->allH5pEmbeds) {
-            $lines = [
-                'H5P Embeds',
-                '==========',
-                'Open each embed URL in a browser to verify it shows the activity before installing.',
-                '',
-            ];
-            $currentPage = null;
-            foreach ($this->allH5pEmbeds as $entry) {
-                if ($entry['page'] !== $currentPage) {
-                    if ($currentPage !== null) {
-                        $lines[] = '';
-                    }
-                    $lines[]     = $entry['page'];
-                    $currentPage = $entry['page'];
-                }
-                $lines[] = '  Embed:  ' . $entry['embed'];
-                $lines[] = '  Source: ' . $entry['source'];
-            }
-            $zip->addFromString('h5p-embeds.txt', implode("\n", $lines) . "\n");
         }
 
         $zip->close();
