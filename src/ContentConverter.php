@@ -313,7 +313,12 @@ class ContentConverter
         $makeMdFig = function (\DOMElement $imgEl, ?\DOMNode $captionEl, \DOMNode $parent) use ($dom): void {
             $frag    = $dom->createDocumentFragment();
             $imgPara = $dom->createElement('p');
-            $imgPara->appendChild($imgEl->cloneNode(true));
+            $imgClone = $imgEl->cloneNode(true);
+            if ($captionEl) {
+                // Caption provides the visible description; clear alt to avoid duplication
+                $imgClone->setAttribute('alt', '');
+            }
+            $imgPara->appendChild($imgClone);
             $frag->appendChild($imgPara);
             if ($captionEl) {
                 $captPara = $dom->createElement('p');
@@ -461,7 +466,30 @@ class ContentConverter
             }
             $h5pCallouts[$ph] = true;
 
-            $div->parentNode->replaceChild($dom->createTextNode($ph), $div);
+            // If H5P div is inside a list item, place it after the parent list instead of inline
+            $liAncestor = null;
+            $node = $div->parentNode;
+            while ($node && $node->nodeType === XML_ELEMENT_NODE) {
+                if ($node->nodeName === 'li') {
+                    $liAncestor = $node;
+                    break;
+                }
+                $node = $node->parentNode;
+            }
+
+            if ($liAncestor && $liAncestor->parentNode) {
+                $listEl = $liAncestor->parentNode;
+                $div->parentNode->removeChild($div);
+                $p = $dom->createElement('p');
+                $p->appendChild($dom->createTextNode($ph));
+                if ($listEl->nextSibling) {
+                    $listEl->parentNode->insertBefore($p, $listEl->nextSibling);
+                } else {
+                    $listEl->parentNode->appendChild($p);
+                }
+            } else {
+                $div->parentNode->replaceChild($dom->createTextNode($ph), $div);
+            }
         }
 
         // Pressbooks print-only fallbacks: textboxes inside a .pdf wrapper — must run before
