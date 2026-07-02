@@ -107,8 +107,8 @@ class ContentConverter
 
         // Remove leading space before opening shortcode tags (league whitespace artifact)
         $result = preg_replace(
-            '/^ \[(announcement|objectives|example|reflection|key-takeaways|definition|case-study|exercise|project-brief|feedback-requested|process-note|references)\]/m',
-            '[$1]',
+            '/^ \[(announcement|objectives|example|reflection|key-takeaways|definition|case-study|exercise|project-brief|feedback-requested|process-note|references)(\b[^\]]*)\]/m',
+            '[$1$2]',
             $result
         );
 
