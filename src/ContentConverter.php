@@ -395,8 +395,9 @@ class ContentConverter
         $xpath = new \DOMXPath($dom);
         $body  = $dom->getElementsByTagName('body')->item(0);
 
-        $callouts = [];
-        $counter  = 0;
+        $callouts    = [];
+        $h5pCallouts = [];   // tracks placeholders that originated from the H5P handler
+        $counter     = 0;
 
         // Multi-paragraph blockquotes (3+ paragraphs) → [excerpt] shortcode
         foreach (iterator_to_array($xpath->query('//blockquote')) as $bq) {
@@ -442,8 +443,23 @@ class ContentConverter
                 $this->h5pEmbeds[] = ['source' => $url, 'embed' => $embedUrl];
                 $callouts[$ph]     = "[h5p url=\"{$embedUrl}\"]";
             } else {
-                $callouts[$ph] = "[exercise title=\"{$title}\"]\n<a href=\"{$url}\">View H5P activity online</a>\n[/exercise]";
+                // Check whether this H5P is inside a textbox--exercises container; if so,
+                // produce a bare link so the outer handler wraps everything in one [exercise] box
+                $insideExercises = false;
+                $ancestor = $div->parentNode;
+                while ($ancestor && $ancestor->nodeType === XML_ELEMENT_NODE) {
+                    $cls = $ancestor->getAttribute('class') ?? '';
+                    if (preg_match('/\btextbox--exercises\b/', $cls)) {
+                        $insideExercises = true;
+                        break;
+                    }
+                    $ancestor = $ancestor->parentNode;
+                }
+                $callouts[$ph] = $insideExercises
+                    ? "<a href=\"{$url}\">View H5P activity online ↗</a>"
+                    : "[exercise title=\"{$title}\"]\n<a href=\"{$url}\">View H5P activity online</a>\n[/exercise]";
             }
+            $h5pCallouts[$ph] = true;
 
             $div->parentNode->replaceChild($dom->createTextNode($ph), $div);
         }
@@ -477,11 +493,11 @@ class ContentConverter
             $contentEl  = $xpath->query(".//*[{$this->xc('textbox__content')}]", $div)->item(0);
             $htmlContent = $contentEl ? $dom->saveHTML($contentEl) : '';
 
-            // Check if any placeholder in this content resolves to an [h5p] embed
+            // Check if any placeholder in this content came from the H5P handler
             $hasH5pEmbed = false;
             if (preg_match_all('/%%CALLOUT\{\d+\}%%/', $htmlContent, $phMatches)) {
                 foreach ($phMatches[0] as $candidate) {
-                    if (isset($callouts[$candidate]) && str_starts_with($callouts[$candidate], '[h5p ')) {
+                    if (isset($h5pCallouts[$candidate])) {
                         $hasH5pEmbed = true;
                         break;
                     }
