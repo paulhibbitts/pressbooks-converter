@@ -182,7 +182,9 @@ class ZipBuilder
             }
 
             $objectivesText = null;
-            if (!empty($part['chapters'])) {
+            // Only extract from the first chapter when the part body doesn't already
+            // contain a [objectives] block (avoids duplicating objectives on the section page)
+            if (!empty($part['chapters']) && strpos($partBody ?? '', '[objectives]') === false) {
                 $objectivesText = $this->converter->extractObjectives($part['chapters'][0]['html']);
             }
 
