@@ -314,9 +314,9 @@ class ContentConverter
             $frag    = $dom->createDocumentFragment();
             $imgPara = $dom->createElement('p');
             $imgClone = $imgEl->cloneNode(true);
-            if ($captionEl) {
-                // Caption provides the visible description; clear alt to avoid duplication
-                $imgClone->setAttribute('alt', '');
+            if ($captionEl && trim($imgClone->getAttribute('alt')) === '') {
+                // No alt text — use caption as fallback
+                $imgClone->setAttribute('alt', trim($captionEl->textContent));
             }
             $imgPara->appendChild($imgClone);
             $frag->appendChild($imgPara);
@@ -363,6 +363,16 @@ class ContentConverter
                 $frag = $dom->createDocumentFragment();
                 $makeMdFig($imgEl, $captionEl, $frag);
                 $figure->parentNode->replaceChild($frag, $figure);
+            }
+        }
+
+        // Fill any remaining empty alt attributes using the image filename stem
+        foreach ($xpath->query('//img[@alt="" or not(@alt)]') as $img) {
+            $src  = $img->getAttribute('src');
+            $stem = pathinfo(basename(parse_url($src, PHP_URL_PATH) ?: $src), PATHINFO_FILENAME);
+            $alt  = ucfirst(strtolower(trim(preg_replace('/[-_]+/', ' ', preg_replace('/\d+$/', '', $stem)))));
+            if ($alt !== '') {
+                $img->setAttribute('alt', $alt);
             }
         }
 
@@ -465,7 +475,7 @@ class ContentConverter
                 }
                 // Always produce a bare link — standalone activities outside a textbox--exercises
                 // container render as plain links; the textbox--exercises handler wraps in [exercise]
-                $callouts[$ph] = "<a href=\"{$url}\">View H5P activity online ↗</a>";
+                $callouts[$ph] = "[View H5P activity online ↗]({$url})";
             }
             $h5pCallouts[$ph] = true;
 

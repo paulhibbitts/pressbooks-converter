@@ -220,11 +220,14 @@ class Parser
                 $chTitleNode = $this->xpath->query(".//*[{$this->xc('chapter-title')}]", $ch)->item(0);
                 $chTitle     = $chTitleNode ? trim($chTitleNode->textContent) : 'Page';
                 $this->cleanTitleWrap($ch);
-                $ugc = $this->xpath->query(".//*[{$this->xc('chapter-ugc')}]", $ch)->item(0) ?? $ch;
+                $ugc          = $this->xpath->query(".//*[{$this->xc('chapter-ugc')}]", $ch)->item(0) ?? $ch;
+                $footnotesDiv = $this->xpath->query(".//*[{$this->xc('footnotes')}]", $ch)->item(0);
+                $chHtml       = $this->dom->saveHTML($ugc)
+                              . ($footnotesDiv ? $this->dom->saveHTML($footnotesDiv) : '');
                 $chapters[] = [
                     'id'    => $ch->getAttribute('id'),
                     'title' => $chTitle,
-                    'html'  => $this->dom->saveHTML($ugc),
+                    'html'  => $chHtml,
                 ];
             }
 
