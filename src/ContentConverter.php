@@ -253,7 +253,7 @@ class ContentConverter
                     $p->appendChild($dom->createTextNode(' '));
                     $a2    = $dom->createElement('a');
                     $a2->setAttribute('href', $url);
-                    $a2->textContent = $url;
+                    $a2->textContent = $title;
                     $p->appendChild($a2);
                     $bq->appendChild($p);
                     $div->parentNode->replaceChild($bq, $div);
@@ -388,6 +388,9 @@ class ContentConverter
                 $a->removeAttribute('href');
             } elseif (isset($this->linkMap[$frag])) {
                 $a->setAttribute('href', $this->linkMap[$frag]);
+            } else {
+                // Unresolved internal anchor — remove href so it renders as plain text
+                $a->removeAttribute('href');
             }
         }
 
