@@ -137,11 +137,11 @@
           <li>Your upload is validated server-side — file type, size (50 MB max), and structure are all checked before anything runs</li>
           <li>The book structure is parsed: metadata, front matter, parts, chapters, and back matter are all extracted, along with internal links</li>
           <li>Each page's HTML is cleaned up — footnotes, videos, definition lists, callout blocks, and links are all handled before conversion to Markdown</li>
-          <li>A <code>pages/</code> folder structure is assembled with proper YAML frontmatter and a ready-to-paste <code>versioning-labels.yaml</code></li>
+          <li>A <code>pages/</code> folder structure is assembled with proper YAML frontmatter, plus a ready-to-use <code>helios.yaml</code> with your book's section labels pre-filled</li>
           <li>The ZIP is streamed back to your browser and the temporary file is immediately deleted from the server</li>
         </ol>
         <p><strong>What's in the ZIP?</strong><br>
-        Numbered <code>section-N/</code> folders, each with a <code>section.md</code> and numbered <code>section-page.md</code> files for every chapter · A <code>versioning-labels.yaml</code> with your book's section titles ready to paste into Grav · Image downloads are optional; Cloudflare-protected hosts can't be downloaded server-side.</p>
+        Numbered <code>section-N/</code> folders, each with a <code>section.md</code> and numbered <code>section-page.md</code> files for every chapter · A <code>helios.yaml</code> with your book's section labels pre-filled, ready to copy to <code>user/config/themes/</code> · Image downloads are optional; Cloudflare-protected hosts can't be downloaded server-side.</p>
       </div>
     </details>
   </div>
