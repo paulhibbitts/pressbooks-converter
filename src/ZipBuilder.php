@@ -412,6 +412,13 @@ class ZipBuilder
         $lines[] = '  Back matter:    ' . count($p->backMatters) . ' page(s)';
         $lines[] = '  Total:          ' . $pageCount . ' page(s)';
         $lines[] = '';
+        $lines[] = 'Next Steps';
+        $lines[] = '----------';
+        $lines[] = '  1. Copy helios.yaml from this ZIP to user/config/themes/helios.yaml';
+        $lines[] = '     (replaces any existing file — back up yours first if customized)';
+        $lines[] = '  2. Upload the pages folder to your Grav user/pages directory';
+        $lines[] = '  3. Review this file for any warnings or manual fixes needed';
+        $lines[] = '';
         $lines[] = 'Conversion Settings';
         $lines[] = '-------------------';
         $lines[] = '  Images:  ' . ($this->skipImages
@@ -475,16 +482,33 @@ class ZipBuilder
 
     private function buildVersioningConfig(): void
     {
-        $lines = [
-            '# Paste the indented block below into user/config/themes/helios.yaml',
-            '# under the existing versioning: key to set the section card titles.',
-            'versioning:',
-            '  labels:',
-        ];
+        $labelLines = [];
         foreach ($this->sectionLabels as [$num, $title]) {
-            $lines[] = "    section-{$num}: '" . str_replace("'", "''", $title) . "'";
+            $labelLines[] = "    section-{$num}: '" . str_replace("'", "''", $title) . "'";
         }
-        $this->addFile('versioning-labels.yaml', implode("\n", $lines) . "\n");
+        $labelsBlock = implode("\n", $labelLines);
+
+        $templatePath = dirname(__DIR__) . '/config/helios.yaml';
+        if (file_exists($templatePath)) {
+            $yaml = file_get_contents($templatePath);
+            // Replace the labels block (including any existing child entries) with generated labels
+            $yaml = preg_replace(
+                '/^(\s{2}labels:)[ \t]*\n(?:[ \t]{4}[^\n]+\n)*/m',
+                "$1\n{$labelsBlock}\n",
+                $yaml
+            );
+            $this->addFile('helios.yaml', $yaml);
+        } else {
+            // Fallback: emit the minimal versioning snippet
+            $lines = [
+                '# Paste the indented block below into user/config/themes/helios.yaml',
+                '# under the existing versioning: key to set the section card titles.',
+                'versioning:',
+                '  labels:',
+                $labelsBlock,
+            ];
+            $this->addFile('versioning-labels.yaml', implode("\n", $lines) . "\n");
+        }
     }
 
     // ── Zip assembly ──────────────────────────────────────────────────────────
