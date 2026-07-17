@@ -8,9 +8,9 @@
 <script>tailwind.config = { darkMode: 'media' }</script>
 <style>
   /* JS-toggled drag state */
-  .drop-zone.dragover { border-color: #60a5fa; background: #eff6ff; }
+  .drop-zone.dragover { border-color: #55738f; background: #eef2f5; }
   @media (prefers-color-scheme: dark) {
-    .drop-zone.dragover { border-color: #3b82f6; background: #1e3058; }
+    .drop-zone.dragover { border-color: #5b83a3; background: #202f3d; }
   }
   /* JS-toggled file-selected visibility */
   .file-selected.visible { display: flex; }
@@ -23,8 +23,8 @@
     .tech-summary-body code { background: #211f1e; border-color: #57534e; }
   }
   /* Global focus ring */
-  :focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; border-radius: 4px; }
-  @media (prefers-color-scheme: dark) { :focus-visible { outline-color: #60a5fa; } }
+  :focus-visible { outline: 2px solid #46698a; outline-offset: 2px; border-radius: 4px; }
+  @media (prefers-color-scheme: dark) { :focus-visible { outline-color: #6f92ac; } }
 </style>
 </head>
 <body class="font-sans bg-stone-100 dark:bg-stone-900 text-stone-900 dark:text-stone-200 min-h-screen flex flex-col items-center py-8 px-4">
@@ -32,37 +32,37 @@
 <div class="w-full max-w-[600px]">
 
   <div class="flex items-center gap-2.5 mb-4">
-    <div class="w-9 h-9 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center text-[19px] shrink-0" aria-hidden="true">📖</div>
+    <div class="w-9 h-9 bg-[#dde6ec] dark:bg-[#202f3d] rounded-lg flex items-center justify-center text-[19px] shrink-0" aria-hidden="true">📖</div>
     <div>
-      <h1 class="text-base font-semibold">Pressbooks → Grav Helios Open Reader <span class="inline-block text-[11px] font-semibold px-[7px] py-px rounded-full bg-blue-100 dark:bg-[#1e3058] text-blue-700 dark:text-blue-400 align-middle ml-1 tracking-[0.02em]">v0.9.0 Beta</span></h1>
+      <h1 class="text-base font-semibold">Pressbooks → Grav Helios Open Reader <span class="inline-block text-[11px] font-semibold px-[7px] py-px rounded-full bg-slate-100 dark:bg-[#202f3d] text-slate-700 dark:text-slate-400 align-middle ml-1 tracking-[0.02em]">v0.9.0 Beta</span></h1>
       <div class="text-[13px] text-stone-500 dark:text-stone-400">Convert a Pressbooks XHTML export to a Grav pages folder for Grav Helios Open Reader</div>
     </div>
   </div>
 
-  <p class="text-[15px] text-stone-500 dark:text-stone-400 mb-5 leading-relaxed"><strong>A web-first reading experience for your Pressbooks content</strong> — <a href="https://demo.hibbittsdesign.org/grav-helios-open-reader/" class="text-blue-700 dark:text-blue-400">Grav Helios Open Reader</a> is a focused, self-hosted reader purpose-built for the web, with Save My Place, LMS embedding, and content stored as portable Markdown files.</p>
+  <p class="text-[15px] text-stone-500 dark:text-stone-400 mb-5 leading-relaxed"><strong>A web-first reading experience for your Pressbooks content</strong> — <a href="https://demo.hibbittsdesign.org/grav-helios-open-reader/" class="text-slate-700 dark:text-slate-400 underline underline-offset-2">Grav Helios Open Reader</a> is a focused, self-hosted reader purpose-built for the web, with Save My Place, LMS embedding, and content stored as portable Markdown files.</p>
 
   <nav aria-label="How it works">
     <ol class="flex flex-col gap-2.5 mb-6 list-none p-0">
       <li class="flex items-start gap-3 text-[15px] text-stone-500 dark:text-stone-400">
-        <div class="shrink-0 w-[22px] h-[22px] bg-blue-100 dark:bg-[#1e3058] text-blue-700 dark:text-blue-400 rounded-full text-xs font-semibold flex items-center justify-center mt-px" aria-hidden="true">1</div>
+        <div class="shrink-0 w-[22px] h-[22px] bg-[#dde6ec] dark:bg-[#202f3d] text-slate-700 dark:text-slate-400 rounded-full text-xs font-semibold flex items-center justify-center mt-px" aria-hidden="true">1</div>
         <span>From your Pressbooks dashboard, click <strong>Export</strong> in the left sidebar. In the <strong>Export Options</strong> panel, check <strong>XHTML</strong> and click <strong>Export Book</strong>. Alternatively, use the <strong>Download this book</strong> dropdown on the book cover page. Download the <code>.html</code> file.</span>
       </li>
       <li class="flex items-start gap-3 text-[15px] text-stone-500 dark:text-stone-400">
-        <div class="shrink-0 w-[22px] h-[22px] bg-blue-100 dark:bg-[#1e3058] text-blue-700 dark:text-blue-400 rounded-full text-xs font-semibold flex items-center justify-center mt-px" aria-hidden="true">2</div>
+        <div class="shrink-0 w-[22px] h-[22px] bg-[#dde6ec] dark:bg-[#202f3d] text-slate-700 dark:text-slate-400 rounded-full text-xs font-semibold flex items-center justify-center mt-px" aria-hidden="true">2</div>
         <span>Upload that file below and click <strong>Convert &amp; Download ZIP</strong>. A <code>pages/</code> folder structure ready for Grav will be downloaded.</span>
       </li>
       <li class="flex items-start gap-3 text-[15px] text-stone-500 dark:text-stone-400">
-        <div class="shrink-0 w-[22px] h-[22px] bg-blue-100 dark:bg-[#1e3058] text-blue-700 dark:text-blue-400 rounded-full text-xs font-semibold flex items-center justify-center mt-px" aria-hidden="true">3</div>
-        <span>Extract the ZIP and copy the <code>pages/</code> folder into your <a href="https://github.com/hibbitts-design/grav-skeleton-helios-open-reader" class="text-blue-700 dark:text-blue-400">Grav Helios Open Reader</a> installation.</span>
+        <div class="shrink-0 w-[22px] h-[22px] bg-[#dde6ec] dark:bg-[#202f3d] text-slate-700 dark:text-slate-400 rounded-full text-xs font-semibold flex items-center justify-center mt-px" aria-hidden="true">3</div>
+        <span>Extract the ZIP and copy the <code>pages/</code> folder into your <a href="https://github.com/hibbitts-design/grav-skeleton-helios-open-reader" class="text-slate-700 dark:text-slate-400 underline underline-offset-2">Grav Helios Open Reader</a> installation.</span>
       </li>
       <li class="flex items-start gap-3 text-[15px] text-stone-500 dark:text-stone-400">
-        <div class="shrink-0 w-[22px] h-[22px] bg-blue-100 dark:bg-[#1e3058] text-blue-700 dark:text-blue-400 rounded-full text-xs font-semibold flex items-center justify-center mt-px" aria-hidden="true">4</div>
+        <div class="shrink-0 w-[22px] h-[22px] bg-[#dde6ec] dark:bg-[#202f3d] text-slate-700 dark:text-slate-400 rounded-full text-xs font-semibold flex items-center justify-center mt-px" aria-hidden="true">4</div>
         <span>In Grav Admin, go to <strong>Themes → Helios → Versioning → Version Labels</strong> and update each section label to match your book's section titles — these labels control the section card titles on the site. The included <code>versioning-labels.yaml</code> in the ZIP contains ready-to-paste labels for your book.</span>
       </li>
     </ol>
   </nav>
 
-  <p class="text-[15px] text-stone-400 dark:text-stone-500 -mt-2 mb-5">New to Grav Helios Open Reader? The <a href="https://demo.hibbittsdesign.org/grav-helios-open-reader/readme" class="text-blue-600 dark:text-blue-400">ReadMe</a> covers installation, configuration, and getting started.</p>
+  <p class="text-[15px] text-stone-400 dark:text-stone-500 -mt-2 mb-5">New to Grav Helios Open Reader? The <a href="https://demo.hibbittsdesign.org/grav-helios-open-reader/readme" class="text-slate-600 dark:text-slate-400 underline underline-offset-2">ReadMe</a> covers installation, configuration, and getting started.</p>
 
   <div id="error-box" class="rounded-lg px-[14px] py-[10px] text-sm gap-2 items-start mb-4 bg-red-50 dark:bg-[#3b0a0a] border border-red-200 dark:border-red-900 text-red-800 dark:text-red-300" style="display:none" role="alert" aria-live="assertive">
     <span aria-hidden="true">⚠</span> <span id="error-text"></span>
@@ -74,16 +74,16 @@
 
     <form method="POST" action="convert.php" enctype="multipart/form-data" id="convert-form">
 
-      <div class="drop-zone border-2 border-dashed border-stone-300 dark:border-stone-600 rounded-lg py-5 px-8 text-center cursor-pointer bg-stone-50 dark:bg-[#211f1e] transition-colors duration-150 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-[#1e3058]" id="drop-zone" role="button" tabindex="0" aria-label="Upload file — click or press Enter to browse">
+      <div class="drop-zone border-2 border-dashed border-stone-300 dark:border-stone-600 rounded-lg py-5 px-8 text-center cursor-pointer bg-stone-50 dark:bg-[#211f1e] transition-colors duration-150 hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-[#202f3d]" id="drop-zone" role="button" tabindex="0" aria-label="Upload file — click or press Enter to browse">
         <div class="text-[2rem] mb-2" aria-hidden="true">⬆</div>
         <p class="text-[15px] font-medium mb-1">Drop your .html or .xhtml file here</p>
         <p class="text-[13px] text-stone-400 dark:text-stone-500">or click to browse — max 50 MB</p>
         <input type="file" name="xhtml" id="file-input" accept=".html,.xhtml" class="hidden">
       </div>
 
-      <div class="file-selected hidden items-center gap-2.5 bg-blue-50 dark:bg-[#1e3058] border border-blue-200 dark:border-blue-700 rounded-lg px-[14px] py-[10px] mb-3" id="file-selected" aria-live="polite">
+      <div class="file-selected hidden items-center gap-2.5 bg-slate-50 dark:bg-[#202f3d] border border-slate-200 dark:border-slate-700 rounded-lg px-[14px] py-[10px] mb-3" id="file-selected" aria-live="polite">
         <span aria-hidden="true">📄</span>
-        <span class="text-sm font-medium text-blue-700 dark:text-blue-400 flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" id="file-name"></span>
+        <span class="text-sm font-medium text-slate-700 dark:text-slate-400 flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" id="file-name"></span>
         <span class="text-[13px] text-stone-500 dark:text-stone-400 whitespace-nowrap" id="file-size"></span>
         <button type="button" class="bg-transparent border-0 cursor-pointer text-stone-400 dark:text-stone-500 text-[17px] px-0.5 leading-none hover:text-stone-700 dark:hover:text-stone-300" id="clear-btn" title="Remove file" aria-label="Remove file">✕</button>
       </div>
@@ -120,7 +120,7 @@
         </div>
       </div>
 
-      <button type="submit" class="w-full py-[10px] text-[15px] font-medium bg-blue-700 dark:bg-blue-600 text-white border border-blue-800 dark:border-blue-500 rounded-lg cursor-pointer transition-colors duration-150 enabled:hover:bg-blue-800 dark:enabled:hover:bg-blue-700 disabled:opacity-40 disabled:cursor-default" id="convert-btn" disabled>
+      <button type="submit" class="w-full py-[10px] text-[15px] font-medium bg-slate-700 dark:bg-slate-600 text-white border border-slate-800 dark:border-slate-500 rounded-lg cursor-pointer transition-colors duration-150 enabled:hover:bg-slate-800 dark:enabled:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-default" id="convert-btn" disabled>
         Convert &amp; Download ZIP
       </button>
 
@@ -146,10 +146,10 @@
     </details>
   </div>
 
-  <div class="text-xs text-stone-400 dark:text-stone-500 text-center mt-8">
-    Built by <a href="https://hibbittsdesign.org" class="text-stone-400 dark:text-stone-500">Paul Hibbitts</a> and <a href="https://claude.ai/code" class="text-stone-400 dark:text-stone-500">Claude Code</a> ·
-    Requires <a href="https://getgrav.org/downloads/skeletons" class="text-stone-400 dark:text-stone-500">Grav Helios Open Reader</a> ·
-    <a href="https://github.com/hibbitts-design/grav-skeleton-helios-open-reader" class="text-stone-400 dark:text-stone-500">GitHub</a>
+  <div class="text-[13px] text-stone-400 dark:text-stone-500 text-center mt-8">
+    Built by <a href="https://hibbittsdesign.org" class="text-stone-400 dark:text-stone-500 underline underline-offset-2">Paul Hibbitts</a> and <a href="https://claude.ai/code" class="text-stone-400 dark:text-stone-500 underline underline-offset-2">Claude Code</a> ·
+    Requires <a href="https://www.hibbittsdesign.org/Grav-Helios-Open-Reader-3560615470e080a79958c9c7dcd5d9a1" class="text-stone-400 dark:text-stone-500 underline underline-offset-2">Grav Helios Open Reader</a> and the <a href="https://getgrav.org/premium/helios" class="text-stone-400 dark:text-stone-500 underline underline-offset-2">Grav Premium Helios Theme</a> ·
+    <a href="https://github.com/hibbitts-design/grav-skeleton-helios-open-reader" class="text-stone-400 dark:text-stone-500 underline underline-offset-2">GitHub</a>
   </div>
 
 </div>
