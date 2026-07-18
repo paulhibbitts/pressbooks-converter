@@ -257,35 +257,46 @@ dropZone.addEventListener('drop', e => {
   showFile(file);
 });
 
+function resetBtn(success = false) {
+  convertBtn.disabled = fileInput.files.length === 0;
+  convertBtnText.textContent = success ? '✓ Conversion complete' : 'Convert & Download ZIP';
+  convertSpinner.classList.add('hidden');
+  convertingNote.style.display = 'none';
+  if (success) {
+    setTimeout(() => { convertBtnText.textContent = 'Convert & Download ZIP'; }, 5000);
+  }
+}
+
 document.getElementById('convert-form').addEventListener('submit', () => {
   convertBtn.disabled = true;
   convertBtnText.textContent = 'Converting…';
   convertSpinner.classList.remove('hidden');
 
+  // Scale timeout to file size: allow ~2s/MB for upload + 60s processing, min 120s, max 10min
+  const fileSizeMB = (fileInput.files[0]?.size ?? 0) / (1024 * 1024);
+  const timeoutMs  = Math.min(600000, Math.max(120000, Math.ceil(fileSizeMB) * 2000 + 60000));
   convertingNote.style.display = '';
-
-  const resetBtn = (success = false) => {
-    convertBtnText.textContent = 'Convert & Download ZIP';
-    convertBtn.disabled = false;
-    convertSpinner.classList.add('hidden');
-    convertingNote.style.display = 'none';
-    if (success) {
-      convertBtnText.textContent = '✓ Conversion complete';
-      setTimeout(() => { convertBtnText.textContent = 'Convert & Download ZIP'; }, 5000);
-    }
-  };
 
   // Poll for the cookie the server sets when the download begins
   const poll = setInterval(() => {
     if (document.cookie.split(';').some(c => c.trim().startsWith('download_ready='))) {
       clearInterval(poll);
+      clearTimeout(fallback);
       document.cookie = 'download_ready=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
       resetBtn(true);
     }
   }, 500);
 
-  // Fallback: reset after 60 s in case the cookie is never detected
-  setTimeout(() => { clearInterval(poll); resetBtn(); }, 60000);
+  // Safety fallback scaled to file size
+  const fallback = setTimeout(() => { clearInterval(poll); resetBtn(); }, timeoutMs);
+});
+
+// Reset form state when browser restores page from back/forward cache
+window.addEventListener('pageshow', e => {
+  if (e.persisted) {
+    clearFile();
+    resetBtn();
+  }
 });
 
 const errParam = new URLSearchParams(window.location.search).get('error');
