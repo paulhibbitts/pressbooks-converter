@@ -275,6 +275,10 @@ document.getElementById('convert-form').addEventListener('submit', () => {
   // Scale timeout to file size: allow ~2s/MB for upload + 60s processing, min 120s, max 10min
   const fileSizeMB = (fileInput.files[0]?.size ?? 0) / (1024 * 1024);
   const timeoutMs  = Math.min(600000, Math.max(120000, Math.ceil(fileSizeMB) * 2000 + 60000));
+  const sizeNote   = fileSizeMB > 20
+    ? 'Large file — upload and conversion may take several minutes. Please wait…'
+    : 'Conversion in progress — large books may take up to a minute. Please wait…';
+  convertingNote.textContent = sizeNote;
   convertingNote.style.display = '';
 
   // Poll for the cookie the server sets when the download begins
