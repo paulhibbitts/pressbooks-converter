@@ -34,6 +34,13 @@
 
 <div class="w-full max-w-[600px]">
 
+  <div class="mb-4">
+    <a href="https://grav-helios-converters.hibbittsdesign.org/" class="inline-flex items-center gap-1 text-[13px] text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3L6 8l4 5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      All Helios converters
+    </a>
+  </div>
+
   <div class="flex items-center gap-3.5 mb-6 pb-5 border-b-2 border-[#3b5a75] dark:border-[#4a6f8c]">
     <div class="w-11 h-11 rounded-[10px] flex items-center justify-center text-[21px] shrink-0 bg-[#cee9fb] dark:bg-[#142f49]" aria-hidden="true">📖</div>
     <div>
@@ -106,34 +113,32 @@
                class="text-[13px] text-stone-500 dark:text-stone-400 w-full">
       </div>
 
-      <div class="flex gap-6 mb-5 mt-2 flex-wrap">
-        <div class="flex flex-col gap-[3px]">
-          <label class="flex items-center gap-[7px] text-[15px] cursor-pointer">
-            <input type="checkbox" name="skip_images" value="1" checked>
-            Skip image downloads
-          </label>
-          <span class="text-xs text-stone-500 dark:text-stone-400 pl-[21px]">Keep remote image URLs; download locally after import. Note: some servers block direct image downloads.</span>
-        </div>
-        <div class="flex flex-col gap-[3px]">
-          <label class="flex items-center gap-[7px] text-[15px] cursor-pointer">
-            <input type="checkbox" name="figure_html" value="1" checked>
-            Use HTML figure/figcaption for captioned images
-          </label>
-          <span class="text-xs text-stone-500 dark:text-stone-400 pl-[21px]">Outputs semantic <code>&lt;figure&gt;</code>/<code>&lt;figcaption&gt;</code> HTML. Uncheck for standard Markdown image + italic caption.</span>
-        </div>
-        <div class="flex flex-col gap-[3px]">
-          <label class="flex items-center gap-[7px] text-[15px] cursor-pointer">
-            <input type="checkbox" name="embed_h5p" value="1">
-            Embed H5P activities
-          </label>
-          <span class="text-xs text-stone-500 dark:text-stone-400 pl-[21px]">Replace H5P placeholder links with embedded shortcodes. A fallback link and <code>h5p-embeds.txt</code> are included in the ZIP so you can verify each embed URL before installing. Requires the book to remain publicly accessible at its original Pressbooks URL.</span>
-        </div>
+      <div class="flex flex-col gap-[3px] mb-5 mt-2">
+        <label class="flex items-center gap-[7px] text-[15px] cursor-pointer">
+          <input type="checkbox" name="skip_images" value="1" checked>
+          Skip image downloads
+        </label>
+        <span class="text-xs text-stone-500 dark:text-stone-400 pl-[21px]">Keep remote image URLs; download locally after import. Note: some servers block direct image downloads.</span>
+        <label class="flex items-center gap-[7px] text-[15px] cursor-pointer mt-2">
+          <input type="checkbox" name="figure_html" value="1" checked>
+          Use HTML figure/figcaption for captioned images
+        </label>
+        <span class="text-xs text-stone-500 dark:text-stone-400 pl-[21px]">Outputs semantic <code>&lt;figure&gt;</code>/<code>&lt;figcaption&gt;</code> HTML. Uncheck for standard Markdown image + italic caption.</span>
+        <label class="flex items-center gap-[7px] text-[15px] cursor-pointer mt-2">
+          <input type="checkbox" name="embed_h5p" value="1">
+          Embed H5P activities
+        </label>
+        <span class="text-xs text-stone-500 dark:text-stone-400 pl-[21px]">Replace H5P placeholder links with embedded shortcodes. A fallback link and <code>h5p-embeds.txt</code> are included in the ZIP so you can verify each embed URL before installing. Requires the book to remain publicly accessible at its original Pressbooks URL.</span>
       </div>
 
       <button type="submit" class="w-full py-[10px] text-[15px] font-medium bg-blue-800 dark:bg-blue-700 text-white border border-blue-900 dark:border-blue-600 rounded-lg cursor-pointer transition-colors duration-150 enabled:hover:bg-blue-900 dark:enabled:hover:bg-blue-800 disabled:opacity-40 disabled:cursor-default inline-flex items-center justify-center gap-2" id="convert-btn" disabled>
         <svg id="convert-spinner" class="hidden animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" stroke-opacity="0.3"/><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
         <span id="convert-btn-text">Convert &amp; Download ZIP</span>
       </button>
+
+      <p id="converting-note" class="text-xs text-stone-500 dark:text-stone-400 text-center mt-2" style="display:none">
+        Conversion in progress — large books may take up to a minute. Please wait&hellip;
+      </p>
 
     </form>
 
@@ -175,6 +180,7 @@ const clearBtn     = document.getElementById('clear-btn');
 const convertBtn   = document.getElementById('convert-btn');
 const convertBtnText = document.getElementById('convert-btn-text');
 const convertSpinner = document.getElementById('convert-spinner');
+const convertingNote = document.getElementById('converting-note');
 const coverSection = document.getElementById('cover-section');
 const coverInput   = document.getElementById('cover-input');
 
@@ -256,10 +262,13 @@ document.getElementById('convert-form').addEventListener('submit', () => {
   convertBtnText.textContent = 'Converting…';
   convertSpinner.classList.remove('hidden');
 
+  convertingNote.style.display = '';
+
   const resetBtn = (success = false) => {
     convertBtnText.textContent = 'Convert & Download ZIP';
     convertBtn.disabled = false;
     convertSpinner.classList.add('hidden');
+    convertingNote.style.display = 'none';
     if (success) {
       convertBtnText.textContent = '✓ Conversion complete';
       setTimeout(() => { convertBtnText.textContent = 'Convert & Download ZIP'; }, 5000);
