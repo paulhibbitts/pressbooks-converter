@@ -86,6 +86,15 @@
   .pv-callout p:last-child { margin-bottom: 0; }
   .pv-error { padding: 1rem; font-size: 0.85rem; color: #991b1b; }
   @media (prefers-color-scheme: dark) { .pv-error { color: #fca5a5; } }
+
+  .pv-img-blocked {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    border-radius: 6px; border: 1px dashed #D9D4C5; background: #F5F3EC;
+    padding: 0.4rem 0.7rem; margin: 0.2rem 0;
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 0.72rem; color: #8B856E;
+  }
+  @media (prefers-color-scheme: dark) { .pv-img-blocked { background: #232019; border-color: #3A362C; } }
   /* Scoped tech-summary body prose */
   .tech-summary-body p  { margin-bottom: 0.75rem; }
   .tech-summary-body ol { padding-left: 1.25rem; margin-bottom: 0.75rem; }
@@ -455,10 +464,35 @@ function renderShortcodes(markdown) {
   return markdown;
 }
 
+// Most images stay as full remote URLs (skip_images is on by default) and the browser loads
+// them directly — no handling needed. The exception is a local filename left behind when a
+// download succeeded (skip_images off); the server already embeds those it can as a base64
+// data URI in page.images. Only genuinely unavailable ones fall back to a placeholder.
+function replaceLocalImages(html, images) {
+  const container = document.createElement('div');
+  container.innerHTML = html;
+  container.querySelectorAll('img').forEach(img => {
+    const src = img.getAttribute('src') || '';
+    if (/^https?:\/\//i.test(src)) return; // already a real URL, leave it to load normally
+
+    const dataUri = images[src];
+    if (dataUri) {
+      img.src = dataUri;
+      return;
+    }
+
+    const placeholder = document.createElement('span');
+    placeholder.className = 'pv-img-blocked';
+    placeholder.innerHTML = '<span aria-hidden="true">🖼</span> Image not available in preview — included in the downloaded ZIP';
+    img.replaceWith(placeholder);
+  });
+  return container.innerHTML;
+}
+
 function showPreviewPage(pageIndex) {
   const page = previewPages[pageIndex];
   previewPath.textContent = page.path;
-  previewContent.innerHTML = marked.parse(renderShortcodes(page.markdown));
+  previewContent.innerHTML = replaceLocalImages(marked.parse(renderShortcodes(page.markdown)), page.images || {});
   previewTabs.querySelectorAll('.pv-tab').forEach((tabButton, tabIndex) =>
     tabButton.classList.toggle('active', tabIndex === pageIndex)
   );

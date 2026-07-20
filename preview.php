@@ -7,6 +7,7 @@ use PB\ZipBuilder;
 const MAX_UPLOAD_BYTES        = 50 * 1024 * 1024;
 const MIN_PREVIEW_PAGE_LENGTH = 500;
 const MAX_PREVIEW_PAGES       = 5;
+const MAX_PREVIEW_IMAGE_BYTES = 2 * 1024 * 1024;
 
 header('Content-Type: application/json');
 
@@ -43,28 +44,28 @@ try {
     sendError(422, $e->getMessage());
 }
 
-$pages = pickPreviewPages($builder->getZipFiles(), $builder->getSectionLabels());
+$zipBin = $builder->getZipBin();
+$pages  = pickPreviewPages($builder->getZipFiles(), $builder->getSectionLabels(), $zipBin);
 if (!$pages) {
     sendError(404, 'No substantial content page was found to preview.');
 }
 
-echo json_encode(['pages' => array_map('formatPreviewPage', $pages)]);
+echo json_encode(['pages' => array_map(fn($page) => formatPreviewPage($page, $zipBin), $pages)]);
 exit;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 /**
- * Samples up to MAX_PREVIEW_PAGES content pages, taking the first substantial
- * section-page.md found within each top-level section folder — gives a
- * representative spread across the book rather than several consecutive
- * pages from the same chapter. Front Matter and Back Matter sections
- * (accessibility statements, prefaces, bibliographies, etc.) are excluded.
+ * Samples up to MAX_PREVIEW_PAGES content pages, one per top-level section folder —
+ * gives a representative spread across the book rather than several consecutive
+ * pages from the same chapter. Front Matter and Back Matter sections (accessibility
+ * statements, prefaces, bibliographies, etc.) are excluded.
  */
-function pickPreviewPages(array $zipFiles, array $sectionLabels): array
+function pickPreviewPages(array $zipFiles, array $sectionLabels, array $zipBin): array
 {
     $skipSections = frontAndBackMatterFolders($sectionLabels);
 
-    $pagesBySection = [];
+    $candidatesBySection = [];
     foreach ($zipFiles as $path => $content) {
         if (!str_ends_with($path, 'section-page.md')) {
             continue;
@@ -80,22 +81,117 @@ function pickPreviewPages(array $zipFiles, array $sectionLabels): array
             continue; // skip thin/stub pages
         }
 
-        if (!isset($pagesBySection[$section])) {
-            $pagesBySection[$section] = ['path' => $path, 'content' => $content];
-        }
+        $candidatesBySection[$section][] = ['path' => $path, 'content' => $content, 'body' => $body];
     }
 
-    return array_slice(array_values($pagesBySection), 0, MAX_PREVIEW_PAGES);
+    $selected = array_map(
+        fn($candidates) => pickBestCandidate($candidates, $zipBin),
+        $candidatesBySection
+    );
+
+    return array_slice(array_values($selected), 0, MAX_PREVIEW_PAGES);
 }
 
-function formatPreviewPage(array $page): array
+// Prefers the first candidate in a section that actually shows an image — either a full
+// remote URL (displays directly, most images by default since skip_images is on) or a local
+// filename with a matching downloaded binary — so a preview reader is more likely to see real
+// book content, not just text. Falls back to the first substantial candidate if none do.
+function pickBestCandidate(array $candidates, array $zipBin): array
+{
+    foreach ($candidates as $candidate) {
+        if (pageHasDisplayableImage($candidate['path'], $candidate['body'], $zipBin)) {
+            return $candidate;
+        }
+    }
+    return $candidates[0];
+}
+
+function pageHasDisplayableImage(string $pagePath, string $markdown, array $zipBin): bool
+{
+    foreach (extractImageRefs($markdown) as $ref) {
+        if (preg_match('#^https?://#i', $ref)) {
+            return true; // a full URL image — the browser loads it directly, no embedding needed
+        }
+    }
+    return matchedImageFilenames($pagePath, $markdown, $zipBin) !== [];
+}
+
+function formatPreviewPage(array $page, array $zipBin): array
 {
     preg_match('/title:\s*"(.+?)"/', $page['content'], $titleMatch);
+    $markdown = stripFrontmatter($page['content']);
     return [
         'path'     => $page['path'],
         'title'    => $titleMatch[1] ?? 'Untitled',
-        'markdown' => stripFrontmatter($page['content']),
+        'markdown' => $markdown,
+        'images'   => embeddedImagesForPage($page['path'], $markdown, $zipBin),
     ];
+}
+
+// Image sources referenced in $markdown, from either Markdown syntax (![alt](path)) or the
+// raw HTML <figure><img src="..."> blocks the converter emits when figure_html is on
+// (its default) — a Markdown-only regex misses that second, actually more common form.
+function extractImageRefs(string $markdown): array
+{
+    $refs = [];
+    if (preg_match_all('/!\[[^\]]*\]\(([^)\s]+)\)/', $markdown, $m)) {
+        $refs = array_merge($refs, $m[1]);
+    }
+    if (preg_match_all('/<img[^>]+src=["\']([^"\']+)["\']/i', $markdown, $m)) {
+        $refs = array_merge($refs, $m[1]);
+    }
+    return array_unique($refs);
+}
+
+// Local (non-URL) image filenames referenced in $markdown that have matching binary data
+// in $zipBin, small enough to embed inline. Shared by pickBestCandidate() (just needs to
+// know if any exist) and embeddedImagesForPage() (needs the actual bytes).
+function matchedImageFilenames(string $pagePath, string $markdown, array $zipBin): array
+{
+    $pageFolder = dirname($pagePath);
+
+    $matched = [];
+    foreach (extractImageRefs($markdown) as $filename) {
+        if (preg_match('#^https?://#i', $filename)) {
+            continue; // already a full URL — the browser can load it directly
+        }
+        $zipPath = $pageFolder . '/' . $filename;
+        if (!isset($zipBin[$zipPath])) {
+            continue; // no matching downloaded binary — left for the placeholder to handle
+        }
+        if (strlen($zipBin[$zipPath]) > MAX_PREVIEW_IMAGE_BYTES) {
+            continue; // too large to embed inline
+        }
+        $matched[] = $filename;
+    }
+    return $matched;
+}
+
+// filename => "data:image/...;base64,..." for every image matchedImageFilenames() found —
+// lets the preview show real images instead of a placeholder, no extra network request needed.
+function embeddedImagesForPage(string $pagePath, string $markdown, array $zipBin): array
+{
+    $pageFolder = dirname($pagePath);
+    $images = [];
+    foreach (matchedImageFilenames($pagePath, $markdown, $zipBin) as $filename) {
+        $bytes = $zipBin[$pageFolder . '/' . $filename];
+        $images[$filename] = 'data:' . imageMimeType($filename) . ';base64,' . base64_encode($bytes);
+    }
+    return $images;
+}
+
+function imageMimeType(string $filename): string
+{
+    $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+    return match ($ext) {
+        'jpg', 'jpeg' => 'image/jpeg',
+        'png'         => 'image/png',
+        'gif'         => 'image/gif',
+        'webp'        => 'image/webp',
+        'svg'         => 'image/svg+xml',
+        'bmp'         => 'image/bmp',
+        default       => 'application/octet-stream',
+    };
 }
 
 // Removes the leading "--- ... ---" YAML block every page starts with.

@@ -45,6 +45,14 @@ class ZipBuilder
         return $this->sectionLabels;
     }
 
+    // zipPath => binary image data. Only populated when a remote image was successfully
+    // downloaded (skip_images off) — used by the preview endpoint to embed real images
+    // instead of a placeholder for the cases where the Markdown no longer has a usable URL.
+    public function getZipBin(): array
+    {
+        return $this->zipBin;
+    }
+
     public function __construct(Parser $parser, bool $skipImages = true, bool $figureHtml = true, bool $embedH5p = false)
     {
         $this->parser     = $parser;
