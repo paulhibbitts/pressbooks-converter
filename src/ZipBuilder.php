@@ -31,6 +31,20 @@ class ZipBuilder
         $this->coverImageFilename = $filename;
     }
 
+    // Exposes the in-memory Markdown files build() already assembled — used by the
+    // preview endpoint, which needs page content without writing an actual zip.
+    public function getZipFiles(): array
+    {
+        return $this->zipFiles;
+    }
+
+    // [secNum, secTitle] pairs — used by the preview endpoint to identify and
+    // exclude the Front Matter / Back Matter sections from sampled pages.
+    public function getSectionLabels(): array
+    {
+        return $this->sectionLabels;
+    }
+
     public function __construct(Parser $parser, bool $skipImages = true, bool $figureHtml = true, bool $embedH5p = false)
     {
         $this->parser     = $parser;
