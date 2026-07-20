@@ -50,9 +50,9 @@ class ContentConverter
         // because fixCallouts() calls toMarkdown() internally, which embeds
         // %%FIG%% text literally into the stored callout strings.
         foreach ($figures as $ph => $figHtml) {
-            $result = str_replace($ph, "\n" . $figHtml . "\n", $result);
+            $result = str_replace($ph, "\n\n" . $figHtml . "\n\n", $result);
             foreach ($callouts as &$shortcode) {
-                $shortcode = str_replace($ph, "\n" . $figHtml . "\n", $shortcode);
+                $shortcode = str_replace($ph, "\n\n" . $figHtml . "\n\n", $shortcode);
             }
             unset($shortcode);
         }
