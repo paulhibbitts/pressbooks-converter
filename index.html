@@ -446,18 +446,35 @@ function renderPreviewTabs() {
   );
 }
 
-// Grav shortcodes ([objectives]…[/objectives], [announcement]…[/announcement]) aren't
-// Markdown — marked.js would otherwise print the brackets as literal text. Convert the
-// ones that matter for a reading preview into styled callouts before parsing.
+// Grav callout shortcodes ContentConverter.php can emit — [objectives]…[/objectives],
+// [announcement title="..."]…[/announcement], [exercise title="..."]…[/exercise],
+// [details summary="..."]…[/details], [excerpt]…[/excerpt] — aren't Markdown, so marked.js
+// would otherwise print the brackets as literal text. Convert them into styled callouts
+// before parsing; [references] is handled separately below since it's dropped, not styled.
+const SHORTCODE_LABELS = {
+  objectives:   'Learning Objectives',
+  announcement: 'Announcement',
+  exercise:     'Exercise',
+  details:      'Details',
+  excerpt:      'Excerpt',
+};
+const SHORTCODE_STYLES = {
+  announcement: 'gold',
+  exercise:     'gold',
+};
+
 function renderShortcodes(markdown) {
+  const tags = Object.keys(SHORTCODE_LABELS).join('|');
   // Blank lines around each injected <div> are required — without them, marked's HTML-block
   // parser swallows whatever markdown immediately follows (e.g. a "##" heading) as raw HTML
   // text instead of parsing it, since it treats the block as continuing until a blank line.
-  markdown = markdown.replace(/\[objectives\]([\s\S]*?)\[\/objectives\]/g, (fullMatch, innerMarkdown) =>
-    `\n\n<div class="pv-callout"><span class="pv-lbl">Learning Objectives</span>${marked.parse(innerMarkdown.trim())}</div>\n\n`
-  );
-  markdown = markdown.replace(/\[announcement(?:\s+title="([^"]*)")?\]([\s\S]*?)\[\/announcement\]/g, (fullMatch, title, innerMarkdown) =>
-    `\n\n<div class="pv-callout gold"><span class="pv-lbl">${title || 'Announcement'}</span>${marked.parse(innerMarkdown.trim())}</div>\n\n`
+  markdown = markdown.replace(
+    new RegExp(`\\[(${tags})(?:\\s+(?:title|summary)="([^"]*)")?\\]([\\s\\S]*?)\\[/\\1\\]`, 'g'),
+    (fullMatch, tag, attrLabel, innerMarkdown) => {
+      const label     = attrLabel || SHORTCODE_LABELS[tag];
+      const styleClass = SHORTCODE_STYLES[tag] ? ` ${SHORTCODE_STYLES[tag]}` : '';
+      return `\n\n<div class="pv-callout${styleClass}"><span class="pv-lbl">${label}</span>${marked.parse(innerMarkdown.trim())}</div>\n\n`;
+    }
   );
   // References blocks aren't wrong to show, just not the point of a quick preview — drop the wrapper, keep nothing else.
   markdown = markdown.replace(/\[references\]([\s\S]*?)\[\/references\]/g, '');
