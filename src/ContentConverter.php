@@ -58,9 +58,15 @@ class ContentConverter
         }
 
         // Restore callout placeholders (reverse order: outer placeholders expand first,
-        // making inner H5P placeholders visible for subsequent iterations)
+        // making inner H5P placeholders visible for subsequent iterations). Blank lines
+        // around the restored shortcode are required — the placeholder was a bare text
+        // node standing in for a block-level <div>, and league doesn't reliably give a
+        // lone text node the same double-newline paragraph separation it gives a <p>, so
+        // without this the text immediately following (e.g. the paragraph right after
+        // [/objectives]) can end up glued to the closing tag with no blank line between
+        // them (same root cause as the figure-placeholder spacing fix above).
         foreach (array_reverse($callouts, true) as $ph => $shortcode) {
-            $result = str_replace($ph, $shortcode, $result);
+            $result = str_replace($ph, "\n\n" . $shortcode . "\n\n", $result);
         }
 
         // Retag callouts by content
