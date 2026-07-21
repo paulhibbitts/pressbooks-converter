@@ -140,6 +140,17 @@ class ContentConverter
             $result = rtrim($result) . "\n\n" . $fnDefs;
         }
 
+        // Separate an image from immediately-following text onto its own line. fixFigures()
+        // only wraps images inside a <figure> or .wp-caption div; a bare <img> in a plain <p>
+        // (common when a WordPress/Pressbooks image has no caption) isn't touched there, so if
+        // the source HTML has zero whitespace between the <img> and following text — e.g.
+        // "<img ... />Figure 9.1.2 Image: ..." or "<img ... />Rajiv Jhangiani is a professor..."
+        // — league converts it as "![alt](src)Text" with no separator at all. A newline puts
+        // the image on its own line with the text starting right below it. Images already
+        // followed by real whitespace in the source are untouched — the lookahead requires
+        // non-whitespace.
+        $result = preg_replace('/(\!\[[^\]]*\]\([^)]+\))(?=[^\s\n])/', "$1\n", $result);
+
         $result = preg_replace('/\n{3,}/', "\n\n", $result);
         return trim($result);
     }
