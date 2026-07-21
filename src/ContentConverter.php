@@ -58,13 +58,9 @@ class ContentConverter
         }
 
         // Restore callout placeholders (reverse order: outer placeholders expand first,
-        // making inner H5P placeholders visible for subsequent iterations). Blank lines
-        // around the restored shortcode are required — the placeholder was a bare text
-        // node standing in for a block-level <div>, and league doesn't reliably give a
-        // lone text node the same double-newline paragraph separation it gives a <p>, so
-        // without this the text immediately following (e.g. the paragraph right after
-        // [/objectives]) can end up glued to the closing tag with no blank line between
-        // them (same root cause as the figure-placeholder spacing fix above).
+        // making inner H5P placeholders visible for subsequent iterations). Same blank-line
+        // reasoning as the figure restoration above — a bare placeholder text node doesn't
+        // reliably get the paragraph spacing a real <p> would.
         foreach (array_reverse($callouts, true) as $ph => $shortcode) {
             $result = str_replace($ph, "\n\n" . $shortcode . "\n\n", $result);
         }
@@ -140,19 +136,20 @@ class ContentConverter
             $result = rtrim($result) . "\n\n" . $fnDefs;
         }
 
-        // Separate an image from immediately-following text onto its own line. fixFigures()
-        // only wraps images inside a <figure> or .wp-caption div; a bare <img> in a plain <p>
-        // (common when a WordPress/Pressbooks image has no caption) isn't touched there, so if
-        // the source HTML has zero whitespace between the <img> and following text — e.g.
-        // "<img ... />Figure 9.1.2 Image: ..." or "<img ... />Rajiv Jhangiani is a professor..."
-        // — league converts it as "![alt](src)Text" with no separator at all. A newline puts
-        // the image on its own line with the text starting right below it. Images already
-        // followed by real whitespace in the source are untouched — the lookahead requires
-        // non-whitespace.
-        $result = preg_replace('/(\!\[[^\]]*\]\([^)]+\))(?=[^\s\n])/', "$1\n", $result);
+        $result = $this->breakImageFromFollowingText($result);
 
         $result = preg_replace('/\n{3,}/', "\n\n", $result);
         return trim($result);
+    }
+
+    // Puts an image on its own line when the source glued it directly to following text
+    // with no separator at all — fixFigures() only wraps images inside a <figure> or
+    // .wp-caption div, so a bare <img> in a plain <p> (a WordPress image with no caption)
+    // passes through untouched otherwise. An image already followed by real whitespace,
+    // like an inline icon before a short label, is left alone.
+    private function breakImageFromFollowingText(string $md): string
+    {
+        return preg_replace('/(\!\[[^\]]*\]\([^)]+\))(?=[^\s\n])/', "$1\n", $md);
     }
 
     // Pull learning objectives text for section frontmatter

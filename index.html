@@ -503,11 +503,9 @@ function renderShortcodes(markdown) {
   return markdown;
 }
 
-// ContentConverter.php emits YouTube videos as a "[youtube]url[/youtube]" shortcode — real
-// Grav syntax the youtube plugin replaces with an embedded player server-side, but marked.js
-// doesn't know it and would print the brackets and URL as literal text. Swap it for an actual
-// embedded iframe before parsing. Blank lines around the injected <div> are required — see
-// renderShortcodes() above for why.
+// Same idea as the shortcode callouts in renderShortcodes() above: swap the
+// "[youtube]url[/youtube]" shortcode for an actual embedded iframe, with the same blank-line
+// spacing marked's HTML-block parser needs.
 function renderVideoEmbeds(markdown) {
   return markdown.replace(/\[youtube\]([\s\S]*?)\[\/youtube\]/g, (fullMatch, url) => {
     const videoId = extractYouTubeId(url.trim());
@@ -558,10 +556,8 @@ function showPreviewPage(pageIndex) {
   renderCurrentView();
 }
 
-// Renders the current page (currentPageIndex) in the current view mode (previewViewMode).
-// Split out from showPreviewPage() so the Preview/Markdown toggle can re-render without
-// needing to know which page is selected, and switching pages keeps whichever view mode
-// the user was already in instead of always resetting to rendered.
+// Renders previewPages[currentPageIndex] in previewViewMode — split out from showPreviewPage()
+// so the Preview/Markdown toggle can re-render without switching pages.
 function renderCurrentView() {
   const page = previewPages[currentPageIndex];
 
