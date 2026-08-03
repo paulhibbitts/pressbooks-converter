@@ -14,8 +14,11 @@
 <meta name="twitter:description" content="Convert a Pressbooks XHTML export into portable Markdown pages for Grav Helios Open Reader, built on the open-source Grav CMS.">
 <title>Pressbooks → Grav Helios Open Reader</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><style>path{stroke:%232c2a27}@media (prefers-color-scheme:dark){path{stroke:%23e8e6e3}}</style><path d='M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4'/><path d='M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config = { darkMode: 'media' }</script>
+<script>tailwind.config = { darkMode: 'media', theme: { extend: { fontFamily: { sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'] } } } }</script>
 <script src="marked.min.js"></script>
 <style>
   /* JS-toggled drag state */
@@ -117,24 +120,27 @@
   @media (prefers-color-scheme: dark) { input[type="checkbox"] { accent-color: #2563eb; } }
 </style>
 </head>
-<body class="font-sans bg-stone-100 dark:bg-stone-900 text-stone-900 dark:text-stone-200 min-h-screen flex flex-col items-center py-8 px-4">
+<body class="font-sans bg-stone-100 dark:bg-stone-900 text-stone-900 dark:text-stone-200 min-h-screen flex flex-col items-center">
 
-<div class="w-full max-w-[600px]">
-
-  <nav class="mb-4" aria-label="Back to all converters">
-    <a href="https://grav-helios-converters.hibbittsdesign.org/" class="inline-flex items-center gap-1 text-[13px] text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3L6 8l4 5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      All Helios converters
-    </a>
-  </nav>
-
-  <div class="flex items-center gap-3.5 mb-6 pb-5 border-b-2 border-[#3b5a75] dark:border-[#4a6f8c]">
-    <div class="w-11 h-11 rounded-[10px] flex items-center justify-center text-[21px] shrink-0 bg-[#cee9fb] dark:bg-[#142f49]" aria-hidden="true">📖</div>
-    <div>
-      <h1 class="text-xl font-bold tracking-tight">Pressbooks → Grav Helios Open Reader <span class="inline-block text-[11px] leading-[1.3] font-semibold px-[7px] py-[3px] rounded-full bg-[#cee9fb] dark:bg-[#142f49] text-[#2c4457] dark:text-[#9fbad0] align-middle ml-1 tracking-[0.02em]">v0.9.0 Beta</span></h1>
-      <div class="text-[13px] text-stone-500 dark:text-stone-400 mt-0.5">Convert a Pressbooks XHTML export to Markdown pages for Grav Helios Open Reader</div>
+<header class="sticky top-0 z-20 w-full flex justify-center bg-stone-100/75 dark:bg-stone-900/75 backdrop-blur border-b-2 border-[#3b5a75] dark:border-[#4a6f8c]">
+  <div class="w-full max-w-[600px] px-4 pt-4 pb-4">
+    <nav class="mb-3" aria-label="Back to all converters">
+      <a href="https://grav-helios-converters.hibbittsdesign.org/" class="inline-flex items-center gap-1 text-[13px] text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3L6 8l4 5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        All Helios converters
+      </a>
+    </nav>
+    <div class="flex items-center gap-3.5">
+      <div class="w-11 h-11 rounded-[10px] flex items-center justify-center shrink-0 bg-[#cee9fb] dark:bg-[#142f49] text-[#2c4457] dark:text-[#9fbad0]" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5c2-1 5-1 8 0v13c-3-1-6-1-8 0z"/><path d="M20 5.5c-2-1-5-1-8 0v13c3-1 6-1 8 0z"/></svg></div>
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight">Pressbooks → Grav Helios Open Reader <span class="inline-block text-[11px] leading-[1.3] font-semibold px-[7px] py-[3px] rounded-full bg-[#cee9fb] dark:bg-[#142f49] text-[#2c4457] dark:text-[#9fbad0] align-middle ml-1 tracking-[0.02em]">v0.9.0 Beta</span></h1>
+        <div class="text-[13px] text-stone-500 dark:text-stone-400 mt-0.5">Convert a Pressbooks XHTML export to Markdown pages for Grav Helios Open Reader</div>
+      </div>
     </div>
   </div>
+</header>
+
+<div class="w-full max-w-[600px] px-4 pt-6 pb-8">
 
   <p class="text-[15px] text-stone-500 dark:text-stone-400 mb-5 leading-relaxed"><strong>A better reading experience for your book or guide, built for the web.</strong> <a href="https://www.hibbittsdesign.org/Grav-Helios-Open-Reader-3560615470e080a79958c9c7dcd5d9a1" class="text-blue-800 dark:text-blue-400 underline underline-offset-2">Grav Helios Open Reader</a> also gives you direct access to the content behind it: portable, future-friendly Markdown files, no database, no WordPress or Pressbooks hosting to maintain. Because Pressbooks exports follow a single, consistent format, conversions are typically a fairly close, faithful match to your original book.</p>
 
@@ -232,7 +238,6 @@
 
         <button type="button" id="preview-btn" class="inline-flex items-center gap-2 py-[10px] px-[14px] text-[13px] font-medium text-blue-800 dark:text-blue-400 bg-transparent border border-blue-200 dark:border-blue-800 rounded-lg cursor-pointer transition-colors duration-150 enabled:hover:bg-blue-50 dark:enabled:hover:bg-blue-950 disabled:opacity-40 disabled:cursor-default" disabled>
           <svg id="preview-spinner" class="hidden animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" stroke-opacity="0.3"/><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
-          <span class="text-[10px] font-semibold tracking-wide uppercase bg-blue-800 dark:bg-blue-600 text-white rounded px-[5px] py-[1px]">New</span>
           <span id="preview-btn-text">Preview sample pages</span>
         </button>
       </div>
@@ -282,7 +287,7 @@
   </div>
 
   <div class="text-[13px] text-stone-500 dark:text-stone-400 text-center mt-4 mb-4">
-    Uploaded files are processed in a temporary directory and deleted immediately after conversion. Nothing is stored on the server.
+    Uploaded files are processed in a temporary directory and deleted immediately after conversion. Nothing is permanently stored on the server.
   </div>
 
   <div class="text-[13px] text-stone-500 dark:text-stone-400 text-center mt-4">
