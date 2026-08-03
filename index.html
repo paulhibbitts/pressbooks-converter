@@ -29,7 +29,7 @@
   /* JS-toggled file-selected visibility */
   .file-selected.visible { display: flex; }
 
-  /* ── Preview panel — its own visual identity, deliberately distinct from   ── */
+  /* ── Preview panel – its own visual identity, deliberately distinct from   ── */
   /* ── the tool's own blue chrome, so it never reads as the real Helios theme ── */
   .pv-panel { display: none; margin-top: 1rem; border: 1px solid #d6d3d1; border-radius: 12px; overflow: hidden; }
   .pv-panel.open { display: block; }
@@ -146,9 +146,13 @@
 
   <div class="max-w-[68ch] mx-auto">
 
-  <p class="text-[15px] text-stone-500 dark:text-stone-400 mb-5 leading-relaxed"><strong>A better reading experience for your book or guide, built for the web.</strong> <a href="https://www.hibbittsdesign.org/Grav-Helios-Open-Reader-3560615470e080a79958c9c7dcd5d9a1" class="text-blue-800 dark:text-blue-400 underline underline-offset-2">Grav Helios Open Reader</a> also gives you direct access to the content behind it: portable, future-friendly Markdown files, no database, no WordPress or Pressbooks hosting to maintain. Because Pressbooks exports follow a single, consistent format, conversions are typically a fairly close, faithful match to your original book.</p>
+  <p class="text-[15px] text-stone-500 dark:text-stone-400 mb-5 leading-relaxed"><a href="https://www.hibbittsdesign.org/Grav-Helios-Open-Reader-3560615470e080a79958c9c7dcd5d9a1" class="text-blue-800 dark:text-blue-400 underline underline-offset-2">Grav Helios Open Reader</a> <strong>gives your book or guide a better reading experience, built for the web</strong> – and gives you direct access to the content behind it: portable, future-friendly Markdown files, no database, no WordPress or Pressbooks hosting to maintain. Because Pressbooks exports follow a single, consistent format, conversions are typically a fairly close, faithful match to your original book.</p>
 
-  <p class="text-[15px] text-stone-500 dark:text-stone-400 mb-5 leading-relaxed">Add Keep My Place reading position (uncommon among reading tools), LMS embedding with a simple URL parameter, and optional Git Sync for open collaborative authoring, with your content always directly accessible whenever you need it.</p>
+  <p class="text-[15px] text-stone-500 dark:text-stone-400 mb-5 leading-relaxed">For readers, that means a clean, distraction-free layout with light and dark mode, structured sections and chapters, and purpose-built callout blocks for objectives, definitions, and key takeaways – a more modern experience than a PDF or a scanned book.</p>
+
+  <p class="text-[15px] text-stone-500 dark:text-stone-400 mb-5 leading-relaxed">Readers never lose their place: <strong>Keep My Place</strong> quietly remembers the last section they read and offers a one-click way back in – across sessions and devices, something few other reading tools offer.</p>
+
+  <p class="text-[15px] text-stone-500 dark:text-stone-400 mb-5 leading-relaxed">LMS embedding with a simple URL parameter keeps readers inside Canvas, Moodle, or Brightspace without asking them to learn a new tool, and optional Git Sync enables open collaborative authoring, with your content always directly accessible whenever you need it.</p>
 
   <p class="text-[15px] text-stone-500 dark:text-stone-400 mb-5 leading-relaxed">For open textbook authors and OER creators, your book is open and publicly accessible on the web by default, with the Markdown files already ready for the 5Rs (retain, reuse, revise, remix, redistribute), no export process needed.</p>
 
@@ -196,10 +200,10 @@
 
     <form method="POST" action="convert.php" enctype="multipart/form-data" id="convert-form">
 
-      <div class="drop-zone border-2 border-dashed border-stone-300 dark:border-stone-600 rounded-lg py-5 px-8 text-center cursor-pointer bg-stone-50 dark:bg-[#211f1e] transition-colors duration-150 hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-[#202f3d]" id="drop-zone" role="button" tabindex="0" aria-label="Upload file — click or press Enter to browse">
+      <div class="drop-zone border-2 border-dashed border-stone-300 dark:border-stone-600 rounded-lg py-5 px-8 text-center cursor-pointer bg-stone-50 dark:bg-[#211f1e] transition-colors duration-150 hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-[#202f3d]" id="drop-zone" role="button" tabindex="0" aria-label="Upload file – click or press Enter to browse">
         <div class="text-[2rem] mb-2" aria-hidden="true">⬆</div>
         <p class="text-[15px] font-medium mb-1">Drop your .html or .xhtml file here</p>
-        <p class="text-[13px] text-stone-500 dark:text-stone-400">or click to browse — max 50 MB</p>
+        <p class="text-[13px] text-stone-500 dark:text-stone-400">or click to browse – max 50 MB</p>
         <input type="file" name="xhtml" id="file-input" accept=".html,.xhtml" class="hidden">
       </div>
 
@@ -212,7 +216,7 @@
 
       <div id="cover-section" class="hidden mb-4">
         <label class="block text-[13px] text-stone-500 dark:text-stone-400 mb-1">
-          Cover image <span class="text-stone-500 dark:text-stone-400">(optional — upload if automatic download fails)</span>
+          Cover image <span class="text-stone-500 dark:text-stone-400">(optional – upload if automatic download fails)</span>
         </label>
         <input type="file" name="cover_image" id="cover-input" accept=".jpg,.jpeg,.png,.gif,.webp"
                class="text-[13px] text-stone-500 dark:text-stone-400 w-full">
@@ -249,7 +253,7 @@
       </div>
 
       <p id="converting-note" class="text-xs text-stone-500 dark:text-stone-400 text-center mt-2" style="display:none">
-        Conversion in progress — large books may take up to a minute. Please wait&hellip;
+        Conversion in progress – large books may take up to a minute. Please wait&hellip;
       </p>
 
     </form>
@@ -277,12 +281,12 @@
       <div class="tech-summary-body mt-3 text-[13px] text-stone-500 dark:text-stone-400 leading-[1.7]">
         <p>It's a self-contained PHP web app running on the server. You upload a Pressbooks XHTML export, it parses the structure and converts everything to Markdown, then hands you back a ZIP ready to drop into Grav.</p>
         <p><strong>What's under the hood?</strong><br>
-        PHP 8+ with <code>DOMDocument</code>/<code>DOMXPath</code> for HTML parsing · <code>league/html-to-markdown</code> for HTML → Markdown conversion · <code>ZipArchive</code> for packaging · Vanilla HTML/CSS/JS frontend — no framework, no build step.</p>
+        PHP 8+ with <code>DOMDocument</code>/<code>DOMXPath</code> for HTML parsing · <code>league/html-to-markdown</code> for HTML → Markdown conversion · <code>ZipArchive</code> for packaging · Vanilla HTML/CSS/JS frontend – no framework, no build step.</p>
         <p><strong>What happens to your file?</strong></p>
         <ol>
-          <li>Your upload is validated server-side — file type, size (50 MB max), and structure are all checked before anything runs</li>
+          <li>Your upload is validated server-side – file type, size (50 MB max), and structure are all checked before anything runs</li>
           <li>The book structure is parsed: metadata, front matter, parts, chapters, and back matter are all extracted, along with internal links</li>
-          <li>Each page's HTML is cleaned up — footnotes, videos, definition lists, callout blocks, and links are all handled before conversion to Markdown</li>
+          <li>Each page's HTML is cleaned up – footnotes, videos, definition lists, callout blocks, and links are all handled before conversion to Markdown</li>
           <li>A <code>pages/</code> folder structure is assembled with proper YAML frontmatter, plus a ready-to-use <code>helios.yaml</code> with your book's section labels pre-filled</li>
           <li>The ZIP is streamed back to your browser and the temporary file is immediately deleted from the server</li>
         </ol>
@@ -422,8 +426,8 @@ document.getElementById('convert-form').addEventListener('submit', () => {
   const fileSizeMB = (fileInput.files[0]?.size ?? 0) / (1024 * 1024);
   const timeoutMs  = Math.min(600000, Math.max(120000, Math.ceil(fileSizeMB) * 2000 + 60000));
   const sizeNote   = fileSizeMB > 20
-    ? 'Large file — upload and conversion may take several minutes. Please wait…'
-    : 'Conversion in progress — large books may take up to a minute. Please wait…';
+    ? 'Large file – upload and conversion may take several minutes. Please wait…'
+    : 'Conversion in progress – large books may take up to a minute. Please wait…';
   convertingNote.textContent = sizeNote;
   convertingNote.style.display = '';
 
@@ -455,10 +459,10 @@ if (errParam) {
   document.getElementById('error-box').style.display = 'flex';
 }
 
-// ── Preview a page — optional, parallel to the main Convert & Download flow ──
+// ── Preview a page – optional, parallel to the main Convert & Download flow ──
 
 let previewPages = null;
-let previewViewMode = 'rendered'; // 'rendered' | 'markdown' — persists across page-tab switches
+let previewViewMode = 'rendered'; // 'rendered' | 'markdown' – persists across page-tab switches
 let currentPageIndex = 0;
 
 previewViewToggle.querySelectorAll('.pv-tab').forEach(toggleButton =>
@@ -478,9 +482,9 @@ function renderPreviewTabs() {
   );
 }
 
-// Grav callout shortcodes ContentConverter.php can emit — [objectives]…[/objectives],
+// Grav callout shortcodes ContentConverter.php can emit – [objectives]…[/objectives],
 // [announcement title="..."]…[/announcement], [exercise title="..."]…[/exercise],
-// [details summary="..."]…[/details], [excerpt]…[/excerpt] — aren't Markdown, so marked.js
+// [details summary="..."]…[/details], [excerpt]…[/excerpt] – aren't Markdown, so marked.js
 // would otherwise print the brackets as literal text. Convert them into styled callouts
 // before parsing; [references] is handled separately below since it's dropped, not styled.
 const SHORTCODE_LABELS = {
@@ -497,7 +501,7 @@ const SHORTCODE_STYLES = {
 
 function renderShortcodes(markdown) {
   const tags = Object.keys(SHORTCODE_LABELS).join('|');
-  // Blank lines around each injected <div> are required — without them, marked's HTML-block
+  // Blank lines around each injected <div> are required – without them, marked's HTML-block
   // parser swallows whatever markdown immediately follows (e.g. a "##" heading) as raw HTML
   // text instead of parsing it, since it treats the block as continuing until a blank line.
   markdown = markdown.replace(
@@ -508,7 +512,7 @@ function renderShortcodes(markdown) {
       return `\n\n<div class="pv-callout${styleClass}"><span class="pv-lbl">${label}</span>${marked.parse(innerMarkdown.trim())}</div>\n\n`;
     }
   );
-  // References blocks aren't wrong to show, just not the point of a quick preview — drop the wrapper, keep nothing else.
+  // References blocks aren't wrong to show, just not the point of a quick preview – drop the wrapper, keep nothing else.
   markdown = markdown.replace(/\[references\]([\s\S]*?)\[\/references\]/g, '');
   markdown = renderVideoEmbeds(markdown);
   return markdown;
@@ -531,7 +535,7 @@ function extractYouTubeId(url) {
 }
 
 // Most images stay as full remote URLs (skip_images is on by default) and the browser loads
-// them directly — no handling needed. The exception is a local filename left behind when a
+// them directly – no handling needed. The exception is a local filename left behind when a
 // download succeeded (skip_images off); the server already embeds those it can as a base64
 // data URI in page.images. Only genuinely unavailable ones fall back to a placeholder.
 function replaceLocalImages(html, images) {
@@ -549,7 +553,7 @@ function replaceLocalImages(html, images) {
 
     const placeholder = document.createElement('span');
     placeholder.className = 'pv-img-blocked';
-    placeholder.innerHTML = '<span aria-hidden="true">🖼</span> Image not available in preview — included in the downloaded ZIP';
+    placeholder.innerHTML = '<span aria-hidden="true">🖼</span> Image not available in preview – included in the downloaded ZIP';
     img.replaceWith(placeholder);
   });
   return container.innerHTML;
@@ -567,7 +571,7 @@ function showPreviewPage(pageIndex) {
   renderCurrentView();
 }
 
-// Renders previewPages[currentPageIndex] in previewViewMode — split out from showPreviewPage()
+// Renders previewPages[currentPageIndex] in previewViewMode – split out from showPreviewPage()
 // so the Preview/Markdown toggle can re-render without switching pages.
 function renderCurrentView() {
   const page = previewPages[currentPageIndex];
@@ -575,7 +579,7 @@ function renderCurrentView() {
   if (previewViewMode === 'markdown') {
     const pre = document.createElement('pre');
     pre.className = 'pv-raw';
-    pre.textContent = page.markdown; // textContent, not innerHTML — escapes book content safely
+    pre.textContent = page.markdown; // textContent, not innerHTML – escapes book content safely
     previewContent.innerHTML = '';
     previewContent.appendChild(pre);
     return;
@@ -616,7 +620,7 @@ previewBtn.addEventListener('click', async () => {
     showPreviewPage(0);
     previewPanel.classList.add('open');
   } catch (e) {
-    showPreviewError('Preview failed — could not reach the server.');
+    showPreviewError('Preview failed – could not reach the server.');
   } finally {
     previewBtn.disabled = fileInput.files.length === 0;
     previewBtnText.textContent = 'Preview sample pages';
