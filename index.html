@@ -173,11 +173,7 @@
       </li>
       <li class="flex items-start gap-3 text-[15px] text-stone-500 dark:text-stone-400">
         <div class="shrink-0 w-[22px] h-[22px] bg-[#dde6ec] dark:bg-[#202f3d] text-slate-700 dark:text-slate-400 rounded-full text-xs font-semibold flex items-center justify-center mt-px" aria-hidden="true">3</div>
-        <span>Extract the ZIP and copy the <code>pages/</code> folder into your <a href="https://www.hibbittsdesign.org/Grav-Helios-Open-Reader-3560615470e080a79958c9c7dcd5d9a1" class="text-blue-800 dark:text-blue-400 underline underline-offset-2">Grav Helios Open Reader</a> installation. Don't have one yet? <a href="https://getgrav.org/download/skeletons/helios-open-reader/latest" class="text-blue-800 dark:text-blue-400 underline underline-offset-2">Download the skeleton package</a>.</span>
-      </li>
-      <li class="flex items-start gap-3 text-[15px] text-stone-500 dark:text-stone-400">
-        <div class="shrink-0 w-[22px] h-[22px] bg-[#dde6ec] dark:bg-[#202f3d] text-slate-700 dark:text-slate-400 rounded-full text-xs font-semibold flex items-center justify-center mt-px" aria-hidden="true">4</div>
-        <span>Copy the included <code>helios.yaml</code> from the ZIP to the <code>user/config/themes/</code> directory of your Grav installation. This file contains your book's section labels and theme settings, ready to use.</span>
+        <span>Extract the ZIP and copy the book folder from inside the extracted <code>pages</code> folder into your <a href="https://www.hibbittsdesign.org/Grav-Helios-Open-Reader-3560615470e080a79958c9c7dcd5d9a1" class="text-blue-800 dark:text-blue-400 underline underline-offset-2">Grav Helios Open Reader</a> installation's <code>user/pages/</code> directory. Don't have a Grav Helios Open Reader yet? <a href="https://getgrav.org/download/skeletons/helios-open-reader/latest" class="text-blue-800 dark:text-blue-400 underline underline-offset-2">Download the skeleton package</a>.</span>
       </li>
     </ol>
   </nav>
@@ -283,11 +279,11 @@
           <li>Your upload is validated server-side – file type, size (50 MB max), and structure are all checked before anything runs</li>
           <li>The book structure is parsed: metadata, front matter, parts, chapters, and back matter are all extracted, along with internal links</li>
           <li>Each page's HTML is cleaned up – footnotes, videos, definition lists, callout blocks, and links are all handled before conversion to Markdown</li>
-          <li>A <code>pages/</code> folder structure is assembled with proper YAML frontmatter, plus a ready-to-use <code>helios.yaml</code> with your book's section labels pre-filled</li>
+          <li>A <code>pages/</code> folder structure is assembled with proper YAML frontmatter</li>
           <li>The ZIP is streamed back to your browser and the temporary file is immediately deleted from the server</li>
         </ol>
         <p><strong>What's in the ZIP?</strong><br>
-        Numbered <code>section-N/</code> folders, each with a <code>section.md</code> and numbered <code>section-page.md</code> files for every chapter · A <code>helios.yaml</code> with your book's section labels pre-filled, ready to copy to <code>user/config/themes/</code> · Image downloads are optional; Cloudflare-protected hosts can't be downloaded server-side.</p>
+        Numbered <code>section-N/</code> folders, each with a <code>section.md</code> and numbered <code>section-page.md</code> files for every chapter · Image downloads are optional; Cloudflare-protected hosts can't be downloaded server-side.</p>
       </div>
     </details>
   </div>

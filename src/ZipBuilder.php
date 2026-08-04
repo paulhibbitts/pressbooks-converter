@@ -24,6 +24,7 @@ class ZipBuilder
 
     private bool   $sslHintShown  = false;
     private string $sectionLabel  = 'Section';
+    private string $bookBase;
 
     public function setCoverImage(string $data, string $filename): void
     {
@@ -59,6 +60,7 @@ class ZipBuilder
         $this->skipImages = $skipImages;
         $this->embedH5p   = $embedH5p;
         $this->converter  = new ContentConverter($parser->linkMap, $figureHtml, $embedH5p);
+        $this->bookBase   = 'pages/10.' . $parser->bookSlug;
     }
 
     // Build the zip and return the path to the temp file
@@ -71,7 +73,6 @@ class ZipBuilder
         $this->buildFrontMatter();
         $this->buildParts();
         $this->buildBackMatter();
-        $this->buildVersioningConfig();
         $this->buildConversionNotes();
 
         $this->warnings = array_merge($this->warnings, $this->converter->warnings);
@@ -88,16 +89,16 @@ class ZipBuilder
         $coverFilename = '';
         if ($this->coverImageData !== null) {
             $coverFilename = $this->coverImageFilename;
-            $this->zipBin['pages/00.sections/' . $coverFilename] = $this->coverImageData;
+            $this->zipBin[$this->bookBase . '/' . $coverFilename] = $this->coverImageData;
         } elseif ($p->bookCoverUrl) {
             $data = $this->downloadFile($p->bookCoverUrl);
             if ($data !== null) {
                 $coverFilename = basename(parse_url($p->bookCoverUrl, PHP_URL_PATH));
-                $this->zipBin['pages/00.sections/' . $coverFilename] = $data;
+                $this->zipBin[$this->bookBase . '/' . $coverFilename] = $data;
             }
         }
 
-        $lines = ['---', 'title: ' . Helpers::yamlStr($p->bookTitle), 'menu: Home'];
+        $lines = ['---', 'title: ' . Helpers::yamlStr($p->bookTitle)];
         if ($p->bookSubtitle) {
             $lines[] = 'subtitle: ' . Helpers::yamlStr($p->bookSubtitle);
         }
@@ -163,7 +164,7 @@ class ZipBuilder
         }
 
         $content = implode("\n", $lines) . "\n\n" . $body;
-        $this->addFile('pages/00.sections/section-list.md', $content);
+        $this->addFile($this->bookBase . '/section-list.md', $content);
     }
 
     private function buildFrontMatter(): void
@@ -293,7 +294,7 @@ class ZipBuilder
         array   $pages,
         ?string $sectionLabelOverride = null
     ): void {
-        $secFolder = sprintf('pages/%02d.section-%d', $secNum, $secNum);
+        $secFolder = sprintf('%s/%02d.section-%d', $this->bookBase, $secNum, $secNum);
 
         $fm = ['---', 'title: ' . Helpers::yamlStr($secTitle)];
         if ($sectionLabelOverride !== null) {
@@ -436,10 +437,9 @@ class ZipBuilder
         $lines[] = '';
         $lines[] = 'Next Steps';
         $lines[] = '----------';
-        $lines[] = '  1. Copy helios.yaml from this ZIP to user/config/themes/helios.yaml';
-        $lines[] = '     (replaces any existing file — back up yours first if customized)';
-        $lines[] = '  2. Upload the pages folder to your Grav user/pages directory';
-        $lines[] = '  3. Review this file for any warnings or manual fixes needed';
+        $lines[] = '  1. Copy the book folder from inside the extracted pages folder into';
+        $lines[] = '     your Grav Helios Open Reader installation\'s user/pages/ directory';
+        $lines[] = '  2. Review this file for any warnings or manual fixes needed';
         $lines[] = '';
         $lines[] = 'Conversion Settings';
         $lines[] = '-------------------';
@@ -502,37 +502,6 @@ class ZipBuilder
         $this->addFile('conversion-notes.txt', implode("\n", $lines) . "\n");
     }
 
-    private function buildVersioningConfig(): void
-    {
-        $labelLines = [];
-        foreach ($this->sectionLabels as [$num, $title]) {
-            $labelLines[] = "    section-{$num}: '" . str_replace("'", "''", $title) . "'";
-        }
-        $labelsBlock = implode("\n", $labelLines);
-
-        $templatePath = dirname(__DIR__) . '/config/helios.yaml';
-        if (file_exists($templatePath)) {
-            $yaml = file_get_contents($templatePath);
-            // Replace the labels block (including any existing child entries) with generated labels
-            $yaml = preg_replace(
-                '/^(\s{2}labels:)[ \t]*\n(?:[ \t]{4}[^\n]+\n)*/m',
-                "$1\n{$labelsBlock}\n",
-                $yaml
-            );
-            $this->addFile('helios.yaml', $yaml);
-        } else {
-            // Fallback: emit the minimal versioning snippet
-            $lines = [
-                '# Paste the indented block below into user/config/themes/helios.yaml',
-                '# under the existing versioning: key to set the section card titles.',
-                'versioning:',
-                '  labels:',
-                $labelsBlock,
-            ];
-            $this->addFile('versioning-labels.yaml', implode("\n", $lines) . "\n");
-        }
-    }
-
     // ── Zip assembly ──────────────────────────────────────────────────────────
 
     private function addFile(string $path, string $content): void
@@ -562,7 +531,7 @@ class ZipBuilder
 
         // Add failed image URLs as a text file if any
         if ($this->imageFailures) {
-            $zip->addFromString('pages/images-not-downloaded.txt', implode("\n", $this->imageFailures) . "\n");
+            $zip->addFromString($this->bookBase . '/images-not-downloaded.txt', implode("\n", $this->imageFailures) . "\n");
         }
 
         $zip->close();

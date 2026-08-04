@@ -13,6 +13,7 @@ class Parser
     public string $bookLicenseUrl = '';
     public string $bookCoverUrl   = '';
     public string $bookUrl        = '';
+    public string $bookSlug       = '';
 
     // Each entry: ['id' => string, 'title' => string, 'html' => string]
     public array $frontMatters = [];
@@ -48,6 +49,7 @@ class Parser
         $this->xpath = new \DOMXPath($this->dom);
 
         $this->extractMeta();
+        $this->computeBookSlug();
         $this->extractStructure();
         $this->buildLinkMap();
     }
@@ -128,6 +130,26 @@ class Parser
         } else {
             [$this->bookLicense, $this->bookLicenseUrl] = self::$licenseMap[$this->bookLicenseRaw];
         }
+    }
+
+    private function computeBookSlug(): void
+    {
+        $slug = Helpers::slugify($this->bookTitle) ?: 'book';
+
+        // Cap to 3 word segments for a readable URL, same as the Common Cartridge
+        // Converter's course slugs.
+        $words = explode('-', $slug);
+        if (count($words) > 3) {
+            $slug = implode('-', array_slice($words, 0, 3));
+        }
+
+        // Helios skeleton's version_pattern requires slugs to end with a digit
+        // (multi-publication mode treats each book as a "version," same as
+        // multi-course mode does for courses).
+        if (!preg_match('/\d$/', $slug)) {
+            $slug .= '-' . date('Y');
+        }
+        $this->bookSlug = $slug;
     }
 
     private function extractStructure(): void

@@ -200,10 +200,10 @@ function stripFrontmatter(string $pageContent): string
     return preg_replace('/^\s*---.*?---\s*/s', '', $pageContent);
 }
 
-// e.g. "pages/02.section-2/01.some-page/section-page.md" -> "02.section-2"
+// e.g. "pages/book-slug/02.section-2/01.some-page/section-page.md" -> "02.section-2"
 function sectionFolderFromPath(string $path): string
 {
-    preg_match('#^pages/([^/]+)/#', $path, $match);
+    preg_match('#^pages/[^/]+/([^/]+)/#', $path, $match);
     return $match[1] ?? '';
 }
 
