@@ -96,7 +96,7 @@ try {
 }
 
 // Serve the zip
-$filename = preg_replace('/[^a-z0-9_-]/i', '-', $parser->bookTitle ?: 'pages') . '-pages.zip';
+$filename = 'open-reader-' . $parser->bookSlug . '.zip';
 setcookie('download_ready', '1', time() + 60, '/');
 header('Content-Type: application/zip');
 header('Content-Disposition: attachment; filename="' . $filename . '"');
