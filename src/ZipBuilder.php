@@ -410,21 +410,24 @@ class ZipBuilder
         $chapterCount = array_sum(array_map(fn($part) => count($part['chapters']), $p->parts));
         $pageCount    = count($p->frontMatters) + $chapterCount + count($p->backMatters);
 
+        $title = 'Pressbooks Conversion Notes';
         $lines = [
-            'Conversion Notes',
-            '================',
+            $title,
+            str_repeat('=', strlen($title)),
             'Generated: ' . date('Y-m-d'),
             '',
-            'Book: ' . $p->bookTitle,
+            'Book Metadata',
+            str_repeat('-', strlen('Book Metadata')),
+            '  Title:   ' . $p->bookTitle,
         ];
         if ($p->bookAuthors) {
-            $lines[] = 'Authors: ' . $this->formatAuthors($p->bookAuthors);
+            $lines[] = '  Authors: ' . $this->formatAuthors($p->bookAuthors);
         }
         if ($p->bookLicense) {
-            $lines[] = 'License: ' . $p->bookLicense;
+            $lines[] = '  License: ' . $p->bookLicense;
         }
         if ($p->bookUrl) {
-            $lines[] = 'Source:  ' . $p->bookUrl;
+            $lines[] = '  Source:  ' . $p->bookUrl;
         }
         $lines[] = '';
         $lines[] = 'Structure';
@@ -450,20 +453,6 @@ class ZipBuilder
             ? 'embedded via [h5p] shortcode' . ($this->allH5pEmbeds ? ' (see H5P Embeds section below)' : '')
             : 'linked to original source');
         $lines[] = '  YouTube: left as external links — Pressbooks exports do not include video URLs';
-        $lines[] = '';
-        $lines[] = 'Known Limitations';
-        $lines[] = '-----------------';
-        $lines[] = '  - Footnotes/endnotes may appear as raw HTML — review in Grav admin';
-        $lines[] = '  - Complex tables may need manual cleanup';
-        $lines[] = '  - Math/LaTeX rendering depends on your Grav MathJax plugin configuration';
-        $lines[] = '  - YouTube and other oEmbed content links to the original Pressbooks page';
-        $lines[] = '';
-        $lines[] = 'Media Support';
-        $lines[] = '-------------';
-        $lines[] = '  Helios Open Reader supports embedded video, audio, and H5P activities,';
-        $lines[] = '  but converted Pressbooks content may contain links to these items rather';
-        $lines[] = '  than actual embeds. Review each page and replace links with the appropriate';
-        $lines[] = '  shortcode where needed (e.g. [h5p url="..."] for H5P activities).';
 
         if ($this->warnings) {
             $lines[] = '';
@@ -481,6 +470,21 @@ class ZipBuilder
                 $lines[] = '  - ' . $e;
             }
         }
+
+        $lines[] = '';
+        $lines[] = 'Known Limitations';
+        $lines[] = '-----------------';
+        $lines[] = '  - Footnotes/endnotes may appear as raw HTML — review in Grav admin';
+        $lines[] = '  - Complex tables may need manual cleanup';
+        $lines[] = '  - Math/LaTeX rendering depends on your Grav MathJax plugin configuration';
+        $lines[] = '  - YouTube and other oEmbed content links to the original Pressbooks page';
+        $lines[] = '';
+        $lines[] = 'Media Support';
+        $lines[] = '-------------';
+        $lines[] = '  Helios Open Reader supports embedded video, audio, and H5P activities,';
+        $lines[] = '  but converted Pressbooks content may contain links to these items rather';
+        $lines[] = '  than actual embeds. Review each page and replace links with the appropriate';
+        $lines[] = '  shortcode where needed (e.g. [h5p url="..."] for H5P activities).';
 
         if ($this->allH5pEmbeds) {
             $lines[] = '';
