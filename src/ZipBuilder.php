@@ -523,7 +523,9 @@ class ZipBuilder
             $h5pText = 'linked to original source';
         }
         $lines[] = '  H5P:     ' . $h5pText;
-        $lines[] = '  YouTube: left as external links — Pressbooks exports do not include video URLs';
+        $lines[] = '  YouTube: ' . ($this->portableMarkdown
+            ? 'embedded via a plain <iframe> (YouTube\'s own embed code)'
+            : 'embedded via [youtube] shortcode');
 
         if ($this->warnings) {
             $lines[] = '';
@@ -548,14 +550,14 @@ class ZipBuilder
         $lines[] = '  - Footnotes/endnotes may appear as raw HTML — review in Grav admin';
         $lines[] = '  - Complex tables may need manual cleanup';
         $lines[] = '  - Math/LaTeX rendering depends on your Grav MathJax plugin configuration';
-        $lines[] = '  - YouTube and other oEmbed content links to the original Pressbooks page';
+        $lines[] = '  - Other oEmbed content (Vimeo, Google Slides, etc.) links to the original Pressbooks page';
         $lines[] = '';
         $lines[] = 'Media Support';
         $lines[] = '-------------';
         if ($this->portableMarkdown) {
-            $lines[] = '  YouTube videos are left as plain links in this format. H5P activities are';
-            $lines[] = '  embedded as real <iframe> elements when "Embed H5P activities" is enabled;';
-            $lines[] = '  otherwise they are left as links to the original source.';
+            $lines[] = '  YouTube videos are embedded as real <iframe> elements (YouTube\'s own embed';
+            $lines[] = '  code). H5P activities are embedded the same way when "Embed H5P activities"';
+            $lines[] = '  is enabled; otherwise they are left as links to the original source.';
         } else {
             $lines[] = '  Helios Open Reader supports embedded video, audio, and H5P activities,';
             $lines[] = '  but converted Pressbooks content may contain links to these items rather';

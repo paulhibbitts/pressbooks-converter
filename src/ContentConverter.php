@@ -240,22 +240,34 @@ class ContentConverter
              . '<script src="https://h5p.org/sites/all/modules/h5p/library/js/h5p-resizer.js" charset="UTF-8"></script>';
     }
 
+    // Standard Markdown mode: YouTube's own official embed code (Share → Embed) — no extra
+    // script or wrapper needed, since a video's aspect ratio is fixed and the YouTube player
+    // handles its own sizing.
+    private function youtubeIframe(string $videoId, string $title): string
+    {
+        $src       = htmlspecialchars('https://www.youtube.com/embed/' . $videoId, ENT_QUOTES, 'UTF-8');
+        $titleAttr = htmlspecialchars($title ?: 'YouTube video player', ENT_QUOTES, 'UTF-8');
+        return '<iframe width="560" height="315" src="' . $src . '" title="' . $titleAttr . '" '
+             . 'frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; '
+             . 'gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" '
+             . 'allowfullscreen></iframe>';
+    }
+
     private function fixVideos(string $html): string
     {
         $dom   = $this->loadFragment($html);
         $xpath = new \DOMXPath($dom);
         $body  = $dom->getElementsByTagName('body')->item(0);
 
-        // YouTube iframes → [youtube] shortcode (or a plain link in Standard Markdown mode,
-        // since there's no Helios plugin available to render the shortcode)
+        // YouTube iframes → [youtube] shortcode, or a real <iframe> embed in Standard
+        // Markdown mode (no Helios plugin needed to render YouTube's own embed code)
         foreach (iterator_to_array($xpath->query('//iframe')) as $iframe) {
             $src = $iframe->getAttribute('src');
             if (preg_match('/youtube\.com\/embed\/([A-Za-z0-9_-]+)/', $src, $m)) {
-                $watchUrl = 'https://www.youtube.com/watch?v=' . $m[1];
-                $title    = $iframe->getAttribute('title');
+                $title = $iframe->getAttribute('title');
                 $sc = $this->portableMarkdown
-                    ? '[' . ($title ?: 'Watch on YouTube') . '](' . $watchUrl . ')'
-                    : '[youtube]' . $watchUrl . '[/youtube]';
+                    ? $this->youtubeIframe($m[1], $title)
+                    : '[youtube]https://www.youtube.com/watch?v=' . $m[1] . '[/youtube]';
                 $iframe->parentNode->replaceChild($dom->createTextNode($sc), $iframe);
             }
         }
@@ -275,10 +287,9 @@ class ContentConverter
             }
 
             if ($ytId) {
-                $watchUrl = "https://www.youtube.com/watch?v={$ytId}";
                 $sc = $this->portableMarkdown
-                    ? '[' . $title . '](' . $watchUrl . ")\n"
-                    : "[youtube]{$watchUrl}[/youtube]\n";
+                    ? $this->youtubeIframe($ytId, $title) . "\n"
+                    : "[youtube]https://www.youtube.com/watch?v={$ytId}[/youtube]\n";
                 $div->parentNode->replaceChild($dom->createTextNode($sc), $div);
             } elseif ($firstA) {
                 $url = $firstA->getAttribute('data-url') ?: $firstA->getAttribute('href');
