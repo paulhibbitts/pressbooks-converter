@@ -468,9 +468,20 @@ class ContentConverter
         $counter     = 0;
 
         // Standard Markdown mode: prefix every line with "> " to form a GFM blockquote/alert.
+        // Whitespace-only lines count as blank too — Pressbooks/WordPress content often has
+        // empty "&nbsp;" spacer paragraphs, which would otherwise survive as a non-empty line
+        // and produce a run of stray bare ">" lines instead of collapsing to at most one.
         $quoteLines = function (string $md): string {
             $lines = explode("\n", trim($md));
-            return implode("\n", array_map(fn($l) => $l === '' ? '>' : '> ' . $l, $lines));
+            $quoted = [];
+            $prevBlank = false;
+            foreach ($lines as $l) {
+                $isBlank = trim($l) === '';
+                if ($isBlank && $prevBlank) continue;
+                $quoted[] = $isBlank ? '>' : '> ' . $l;
+                $prevBlank = $isBlank;
+            }
+            return implode("\n", $quoted);
         };
 
         // Multi-paragraph blockquotes (3+ paragraphs) → [excerpt] shortcode
@@ -614,8 +625,12 @@ class ContentConverter
                 $bodyText = $this->toMarkdown($htmlContent);
                 $counter++;
                 $ph            = "%%CALLOUT{$counter}%%";
+                // Portable mode: don't blockquote-wrap this one — the body still contains a
+                // nested H5P placeholder that resolves to a raw multi-line <iframe> block,
+                // which can't be safely nested inside a "> " blockquote once substituted back
+                // in below (the substitution is a blind string splice with no ">" awareness).
                 $callouts[$ph] = $this->portableMarkdown
-                    ? "> [!TIP]\n> **{$title}**\n" . $quoteLines($bodyText)
+                    ? "## {$title}\n\n" . trim($bodyText)
                     : "[exercise title=\"{$title}\"]\n{$bodyText}\n[/exercise]";
                 $div->parentNode->replaceChild($dom->createTextNode($ph), $div);
             } else {

@@ -309,14 +309,22 @@ class ZipBuilder
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    // Prefixes every line of $text with "> " so it renders as a Markdown blockquote
-    // (blank lines become a bare ">" so the blockquote doesn't visually break).
+    // Prefixes every line of $text with "> " so it renders as a Markdown blockquote (blank
+    // lines become a bare ">" so the blockquote doesn't visually break). Whitespace-only
+    // lines count as blank too, and consecutive blank lines collapse to a single ">" —
+    // otherwise "&nbsp;" spacer content (common in Pressbooks/WordPress prose) survives as
+    // a run of stray bare ">" lines.
     private function quoteBlock(string $text): string
     {
-        $lines = explode("\n", trim($text));
-        $quoted = array_map(function (string $line): string {
-            return $line === '' ? '>' : '> ' . $line;
-        }, $lines);
+        $lines  = explode("\n", trim($text));
+        $quoted = [];
+        $prevBlank = false;
+        foreach ($lines as $line) {
+            $isBlank = trim($line) === '';
+            if ($isBlank && $prevBlank) continue;
+            $quoted[] = $isBlank ? '>' : '> ' . $line;
+            $prevBlank = $isBlank;
+        }
         return implode("\n", $quoted);
     }
 
@@ -495,8 +503,7 @@ class ZipBuilder
         if ($this->portableMarkdown) {
             $lines[] = '  1. Copy the book folder from inside the extracted pages folder into';
             $lines[] = '     any Grav site\'s user/pages/ directory (no Helios plugin required),';
-            $lines[] = '     or adapt it for another Markdown-based platform (GitHub, Docsify,';
-            $lines[] = '     Docsify-This, Jekyll, Hugo, etc.)';
+            $lines[] = '     or adapt it for another Markdown-based platform';
             $lines[] = '  2. Review this file for any warnings or manual fixes needed';
         } else {
             $lines[] = '  1. Copy the book folder from inside the extracted pages folder into';
@@ -551,6 +558,11 @@ class ZipBuilder
         $lines[] = '  - Complex tables may need manual cleanup';
         $lines[] = '  - Math/LaTeX rendering depends on your Grav MathJax plugin configuration';
         $lines[] = '  - Other oEmbed content (Vimeo, Google Slides, etc.) links to the original Pressbooks page';
+        if ($this->portableMarkdown) {
+            $lines[] = '  - Internal cross-reference links use Grav-style absolute paths (e.g. /section-2/some-page)';
+            $lines[] = '    and will not resolve outside a Grav site — check/update these manually if publishing';
+            $lines[] = '    to another platform';
+        }
         $lines[] = '';
         $lines[] = 'Media Support';
         $lines[] = '-------------';
