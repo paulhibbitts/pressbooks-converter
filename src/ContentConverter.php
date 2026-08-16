@@ -9,15 +9,17 @@ class ContentConverter
     private array        $linkMap;
     private bool         $figureHtml;
     private bool         $embedH5p;
+    private bool         $portableMarkdown;
     private HtmlConverter $md;
     public  array        $warnings  = [];
     public  array        $h5pEmbeds = [];
 
-    public function __construct(array $linkMap, bool $figureHtml = true, bool $embedH5p = false)
+    public function __construct(array $linkMap, bool $figureHtml = true, bool $embedH5p = false, bool $portableMarkdown = false)
     {
-        $this->linkMap    = $linkMap;
-        $this->figureHtml = $figureHtml;
-        $this->embedH5p   = $embedH5p;
+        $this->linkMap          = $linkMap;
+        $this->figureHtml       = $figureHtml;
+        $this->embedH5p         = $embedH5p;
+        $this->portableMarkdown = $portableMarkdown;
         $this->md         = new HtmlConverter([
             'header_style'            => 'atx',
             'suppress_errors'         => true,
@@ -223,17 +225,37 @@ class ContentConverter
         return [$this->bodyHtml($body), implode("\n", $defs)];
     }
 
+    // Standard Markdown mode: a real <iframe> + H5P's own official resizer script, matching
+    // H5P's own documented embed pattern (repeating the script tag per embed is intentional —
+    // it's how H5P.org's own multi-embed pages work; browsers cache the file after the first load).
+    // No per-embed dimensions are available from the source export, hence the responsive width
+    // and fixed fallback height (the resizer script adjusts height dynamically after load).
+    private function h5pIframe(string $embedUrl, string $title): string
+    {
+        $src = htmlspecialchars($embedUrl, ENT_QUOTES, 'UTF-8');
+        return '<div class="h5p-container"><iframe src="' . $src . '" width="100%" height="500" '
+             . 'frameborder="0" allowfullscreen="allowfullscreen" '
+             . 'allow="geolocation *; microphone *; camera *; midi *; encrypted-media *" '
+             . 'title="' . $title . '"></iframe></div>' . "\n"
+             . '<script src="https://h5p.org/sites/all/modules/h5p/library/js/h5p-resizer.js" charset="UTF-8"></script>';
+    }
+
     private function fixVideos(string $html): string
     {
         $dom   = $this->loadFragment($html);
         $xpath = new \DOMXPath($dom);
         $body  = $dom->getElementsByTagName('body')->item(0);
 
-        // YouTube iframes → [youtube] shortcode
+        // YouTube iframes → [youtube] shortcode (or a plain link in Standard Markdown mode,
+        // since there's no Helios plugin available to render the shortcode)
         foreach (iterator_to_array($xpath->query('//iframe')) as $iframe) {
             $src = $iframe->getAttribute('src');
             if (preg_match('/youtube\.com\/embed\/([A-Za-z0-9_-]+)/', $src, $m)) {
-                $sc = '[youtube]https://www.youtube.com/watch?v=' . $m[1] . '[/youtube]';
+                $watchUrl = 'https://www.youtube.com/watch?v=' . $m[1];
+                $title    = $iframe->getAttribute('title');
+                $sc = $this->portableMarkdown
+                    ? '[' . ($title ?: 'Watch on YouTube') . '](' . $watchUrl . ')'
+                    : '[youtube]' . $watchUrl . '[/youtube]';
                 $iframe->parentNode->replaceChild($dom->createTextNode($sc), $iframe);
             }
         }
@@ -253,7 +275,10 @@ class ContentConverter
             }
 
             if ($ytId) {
-                $sc = "[youtube]https://www.youtube.com/watch?v={$ytId}[/youtube]\n";
+                $watchUrl = "https://www.youtube.com/watch?v={$ytId}";
+                $sc = $this->portableMarkdown
+                    ? '[' . $title . '](' . $watchUrl . ")\n"
+                    : "[youtube]{$watchUrl}[/youtube]\n";
                 $div->parentNode->replaceChild($dom->createTextNode($sc), $div);
             } elseif ($firstA) {
                 $url = $firstA->getAttribute('data-url') ?: $firstA->getAttribute('href');
@@ -431,6 +456,12 @@ class ContentConverter
         $h5pCallouts = [];   // tracks placeholders that originated from the H5P handler
         $counter     = 0;
 
+        // Standard Markdown mode: prefix every line with "> " to form a GFM blockquote/alert.
+        $quoteLines = function (string $md): string {
+            $lines = explode("\n", trim($md));
+            return implode("\n", array_map(fn($l) => $l === '' ? '>' : '> ' . $l, $lines));
+        };
+
         // Multi-paragraph blockquotes (3+ paragraphs) → [excerpt] shortcode
         foreach (iterator_to_array($xpath->query('//blockquote')) as $bq) {
             if ($xpath->query('./p', $bq)->length < 3) {
@@ -442,7 +473,9 @@ class ContentConverter
             }
             $counter++;
             $ph            = "%%CALLOUT{$counter}%%";
-            $callouts[$ph] = "[excerpt]\n" . $this->toMarkdown($inner) . "\n[/excerpt]";
+            $callouts[$ph] = $this->portableMarkdown
+                ? $quoteLines($this->toMarkdown($inner))
+                : "[excerpt]\n" . $this->toMarkdown($inner) . "\n[/excerpt]";
             $bq->parentNode->replaceChild($dom->createTextNode($ph), $bq);
         }
 
@@ -452,7 +485,9 @@ class ContentConverter
             $inner     = $contentEl ? $dom->saveHTML($contentEl) : $this->bodyHtml($div);
             $counter++;
             $ph             = "%%CALLOUT{$counter}%%";
-            $callouts[$ph]  = "[objectives]\n" . $this->toMarkdown($inner) . "\n[/objectives]";
+            $callouts[$ph]  = $this->portableMarkdown
+                ? "> [!TIP]\n> **Learning Objectives**\n" . $quoteLines($this->toMarkdown($inner))
+                : "[objectives]\n" . $this->toMarkdown($inner) . "\n[/objectives]";
             $div->parentNode->replaceChild($dom->createTextNode($ph), $div);
         }
 
@@ -473,7 +508,9 @@ class ContentConverter
                 $embedUrl = $parsed['scheme'] . '://' . $parsed['host']
                           . rtrim($parsed['path'], '/') . '/wp-admin/admin-ajax.php?action=h5p_embed&id=' . $m[1];
                 $this->h5pEmbeds[] = ['source' => $url, 'embed' => $embedUrl];
-                $callouts[$ph]     = "[h5p url=\"{$embedUrl}\"]";
+                $callouts[$ph]     = $this->portableMarkdown
+                    ? $this->h5pIframe($embedUrl, $title)
+                    : "[h5p url=\"{$embedUrl}\"]";
             } else {
                 // Check whether this H5P is inside a textbox--exercises container; if so,
                 // produce a bare link so the outer handler wraps everything in one [exercise] box
@@ -537,7 +574,9 @@ class ContentConverter
             $bodyText = $this->toMarkdown($this->bodyHtml($div));
             $counter++;
             $ph            = "%%CALLOUT{$counter}%%";
-            $callouts[$ph] = "[details summary=\"{$summary}\"]\n{$bodyText}\n[/details]";
+            $callouts[$ph] = $this->portableMarkdown
+                ? "<details>\n<summary>{$summary}</summary>\n\n" . trim($bodyText) . "\n\n</details>"
+                : "[details summary=\"{$summary}\"]\n{$bodyText}\n[/details]";
             $div->parentNode->replaceChild($dom->createTextNode($ph), $div);
         }
 
@@ -564,7 +603,9 @@ class ContentConverter
                 $bodyText = $this->toMarkdown($htmlContent);
                 $counter++;
                 $ph            = "%%CALLOUT{$counter}%%";
-                $callouts[$ph] = "[exercise title=\"{$title}\"]\n{$bodyText}\n[/exercise]";
+                $callouts[$ph] = $this->portableMarkdown
+                    ? "> [!TIP]\n> **{$title}**\n" . $quoteLines($bodyText)
+                    : "[exercise title=\"{$title}\"]\n{$bodyText}\n[/exercise]";
                 $div->parentNode->replaceChild($dom->createTextNode($ph), $div);
             } else {
                 $frag = $dom->createDocumentFragment();
@@ -597,7 +638,9 @@ class ContentConverter
 
             $counter++;
             $ph             = "%%CALLOUT{$counter}%%";
-            $callouts[$ph]  = "[announcement]\n{$bodyText}\n[/announcement]";
+            $callouts[$ph]  = $this->portableMarkdown
+                ? "> [!IMPORTANT]\n" . $quoteLines($bodyText)
+                : "[announcement]\n{$bodyText}\n[/announcement]";
             $div->parentNode->replaceChild($dom->createTextNode($ph), $div);
         }
 

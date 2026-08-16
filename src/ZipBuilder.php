@@ -7,6 +7,7 @@ class ZipBuilder
     private ContentConverter $converter;
     private bool             $skipImages;
     private bool             $embedH5p;
+    private bool             $portableMarkdown;
 
     public array $warnings       = [];
     public array $errors         = [];
@@ -54,13 +55,14 @@ class ZipBuilder
         return $this->zipBin;
     }
 
-    public function __construct(Parser $parser, bool $skipImages = true, bool $figureHtml = true, bool $embedH5p = false)
+    public function __construct(Parser $parser, bool $skipImages = true, bool $figureHtml = true, bool $embedH5p = false, bool $portableMarkdown = false)
     {
-        $this->parser     = $parser;
-        $this->skipImages = $skipImages;
-        $this->embedH5p   = $embedH5p;
-        $this->converter  = new ContentConverter($parser->linkMap, $figureHtml, $embedH5p);
-        $this->bookBase   = 'pages/10.' . $parser->bookSlug;
+        $this->parser           = $parser;
+        $this->skipImages       = $skipImages;
+        $this->embedH5p         = $embedH5p;
+        $this->portableMarkdown = $portableMarkdown;
+        $this->converter        = new ContentConverter($parser->linkMap, $figureHtml, $embedH5p, $portableMarkdown);
+        $this->bookBase         = 'pages/10.' . $parser->bookSlug;
     }
 
     // Build the zip and return the path to the temp file
@@ -86,51 +88,60 @@ class ZipBuilder
     {
         $p = $this->parser;
 
+        // Portable mode never writes a cover_image: frontmatter field to reference it (that
+        // field's sibling cover_image_layout is Helios-specific), so skip fetching/bundling
+        // the file entirely rather than shipping an orphaned, unreferenced image.
         $coverFilename = '';
-        if ($this->coverImageData !== null) {
-            $coverFilename = $this->coverImageFilename;
-            $this->zipBin[$this->bookBase . '/' . $coverFilename] = $this->coverImageData;
-        } elseif ($p->bookCoverUrl) {
-            $data = $this->downloadFile($p->bookCoverUrl);
-            if ($data !== null) {
-                $coverFilename = basename(parse_url($p->bookCoverUrl, PHP_URL_PATH));
-                $this->zipBin[$this->bookBase . '/' . $coverFilename] = $data;
+        if (!$this->portableMarkdown) {
+            if ($this->coverImageData !== null) {
+                $coverFilename = $this->coverImageFilename;
+                $this->zipBin[$this->bookBase . '/' . $coverFilename] = $this->coverImageData;
+            } elseif ($p->bookCoverUrl) {
+                $data = $this->downloadFile($p->bookCoverUrl);
+                if ($data !== null) {
+                    $coverFilename = basename(parse_url($p->bookCoverUrl, PHP_URL_PATH));
+                    $this->zipBin[$this->bookBase . '/' . $coverFilename] = $data;
+                }
             }
-        }
-
-        $lines = ['---', 'title: ' . Helpers::yamlStr($p->bookTitle)];
-        if ($p->bookSubtitle) {
-            $lines[] = 'subtitle: ' . Helpers::yamlStr($p->bookSubtitle);
-        }
-        if ($coverFilename) {
-            $lines[] = 'cover_image: ' . $coverFilename;
-            $lines[] = 'cover_image_layout: sidebar';
         }
 
         $authorsStr = $this->formatAuthors($p->bookAuthors);
-        if ($authorsStr) {
-            $lines[] = 'authors: ' . Helpers::yamlStr($authorsStr);
-            $lines[] = 'show_oer_attribution: true';
-        }
-        if ($p->bookLicense) {
-            $lines[] = 'license: ' . Helpers::yamlStr($p->bookLicense);
-        }
-        if ($p->bookLicenseUrl) {
-            $lines[] = 'license_url: ' . Helpers::yamlStr($p->bookLicenseUrl);
-        }
-        if ($this->sectionLabel !== 'Section') {
-            $lines[] = 'section_label: ' . $this->sectionLabel;
-            $lines[] = 'show_section_label: false';
-        }
-        if ($p->bookLicense && $authorsStr) {
-            $parts = [$p->bookTitle . ' by ' . $authorsStr];
-            if ($p->bookYear) {
-                $parts[] = '© ' . $p->bookYear;
+
+        if ($this->portableMarkdown) {
+            $lines = ['---', 'title: ' . Helpers::yamlStr($p->bookTitle), '---'];
+        } else {
+            $lines = ['---', 'title: ' . Helpers::yamlStr($p->bookTitle)];
+            if ($p->bookSubtitle) {
+                $lines[] = 'subtitle: ' . Helpers::yamlStr($p->bookSubtitle);
             }
-            $parts[] = 'is licensed under <a href="' . $p->bookLicenseUrl . '">' . $p->bookLicense . '</a>.';
-            $lines[] = 'attribution_text: ' . Helpers::yamlStr(implode(' ', $parts));
+            if ($coverFilename) {
+                $lines[] = 'cover_image: ' . $coverFilename;
+                $lines[] = 'cover_image_layout: sidebar';
+            }
+            if ($authorsStr) {
+                $lines[] = 'authors: ' . Helpers::yamlStr($authorsStr);
+                $lines[] = 'show_oer_attribution: true';
+            }
+            if ($p->bookLicense) {
+                $lines[] = 'license: ' . Helpers::yamlStr($p->bookLicense);
+            }
+            if ($p->bookLicenseUrl) {
+                $lines[] = 'license_url: ' . Helpers::yamlStr($p->bookLicenseUrl);
+            }
+            if ($this->sectionLabel !== 'Section') {
+                $lines[] = 'section_label: ' . $this->sectionLabel;
+                $lines[] = 'show_section_label: false';
+            }
+            if ($p->bookLicense && $authorsStr) {
+                $parts = [$p->bookTitle . ' by ' . $authorsStr];
+                if ($p->bookYear) {
+                    $parts[] = '© ' . $p->bookYear;
+                }
+                $parts[] = 'is licensed under <a href="' . $p->bookLicenseUrl . '">' . $p->bookLicense . '</a>.';
+                $lines[] = 'attribution_text: ' . Helpers::yamlStr(implode(' ', $parts));
+            }
+            $lines[] = '---';
         }
-        $lines[] = '---';
 
         // Build announcement block with book metadata and source link
         $metaParts = [];
@@ -138,7 +149,12 @@ class ZipBuilder
             $metaParts[] = '**Authors:** ' . $authorsStr;
         }
         if ($p->bookLicense) {
-            $metaParts[] = '**License:** ' . $p->bookLicense;
+            // In portable mode there's no frontmatter license_url field for a theme to read,
+            // so the license link has to live in the body text itself to survive the export.
+            $licenseText = ($this->portableMarkdown && $p->bookLicenseUrl)
+                ? '[' . $p->bookLicense . '](' . $p->bookLicenseUrl . ')'
+                : $p->bookLicense;
+            $metaParts[] = '**License:** ' . $licenseText;
         }
         $pageCount = count($p->frontMatters)
                    + array_sum(array_map(fn($part) => count($part['chapters']), $p->parts))
@@ -154,11 +170,32 @@ class ZipBuilder
         if ($p->bookUrl) {
             $announcementBody .= '[View original on Pressbooks](' . $p->bookUrl . ")\n\n";
         }
-        $mediaItems = $this->embedH5p ? 'Video and audio' : 'Video, audio, and H5P content';
-        $announcementBody .= "*[Grav Helios Open Reader](https://www.hibbittsdesign.org/Grav-Helios-Open-Reader-3560615470e080a79958c9c7dcd5d9a1) supports embedded video, audio, and H5P activities. {$mediaItems} in this converted book may appear as links rather than embedded content.*\n\n";
+        if ($this->portableMarkdown) {
+            // Same attribution sentence normally carried in the (dropped) attribution_text
+            // frontmatter field — kept in the body here so OER attribution survives the export.
+            if ($p->bookLicense && $authorsStr) {
+                $attrParts = [$p->bookTitle . ' by ' . $authorsStr];
+                if ($p->bookYear) {
+                    $attrParts[] = '© ' . $p->bookYear;
+                }
+                $licenseLink = $p->bookLicenseUrl ? '[' . $p->bookLicense . '](' . $p->bookLicenseUrl . ')' : $p->bookLicense;
+                $attrParts[] = 'is licensed under ' . $licenseLink . '.';
+                $announcementBody .= implode(' ', $attrParts) . "\n\n";
+            }
+        } else {
+            $mediaItems = $this->embedH5p ? 'Video and audio' : 'Video, audio, and H5P content';
+            $announcementBody .= "*[Grav Helios Open Reader](https://www.hibbittsdesign.org/Grav-Helios-Open-Reader-3560615470e080a79958c9c7dcd5d9a1) supports embedded video, audio, and H5P activities. {$mediaItems} in this converted book may appear as links rather than embedded content.*\n\n";
+        }
 
-        $annoTitle = str_replace('"', '&quot;', $p->bookTitle . ' — Imported from Pressbooks');
-        $body = "[announcement title=\"{$annoTitle}\"]\n\n{$announcementBody}[/announcement]\n";
+        $annoTitle = $p->bookTitle . ' — Imported from Pressbooks';
+        if ($this->portableMarkdown) {
+            $body = "> [!IMPORTANT]\n> **" . $annoTitle . "**\n"
+                  . $this->quoteBlock($announcementBody)
+                  . "\n";
+        } else {
+            $annoTitleEsc = str_replace('"', '&quot;', $annoTitle);
+            $body = "[announcement title=\"{$annoTitleEsc}\"]\n\n{$announcementBody}[/announcement]\n";
+        }
         if ($p->bookAbout) {
             $body .= "\n" . trim($p->bookAbout) . "\n";
         }
@@ -272,6 +309,17 @@ class ZipBuilder
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
+    // Prefixes every line of $text with "> " so it renders as a Markdown blockquote
+    // (blank lines become a bare ">" so the blockquote doesn't visually break).
+    private function quoteBlock(string $text): string
+    {
+        $lines = explode("\n", trim($text));
+        $quoted = array_map(function (string $line): string {
+            return $line === '' ? '>' : '> ' . $line;
+        }, $lines);
+        return implode("\n", $quoted);
+    }
+
     private function detectSectionLabel(): string
     {
         foreach ($this->parser->parts as $part) {
@@ -297,15 +345,19 @@ class ZipBuilder
         $secFolder = sprintf('%s/%02d.section-%d', $this->bookBase, $secNum, $secNum);
 
         $fm = ['---', 'title: ' . Helpers::yamlStr($secTitle)];
-        if ($sectionLabelOverride !== null) {
-            $fm[] = 'section_label: ' . Helpers::yamlStr($sectionLabelOverride);
+        if (!$this->portableMarkdown) {
+            if ($sectionLabelOverride !== null) {
+                $fm[] = 'section_label: ' . Helpers::yamlStr($sectionLabelOverride);
+            }
+            if ($secDesc) {
+                $fm[] = 'description: ' . Helpers::yamlStr($secDesc);
+            }
+            if ($objectivesText) {
+                $fm[] = 'learning_objectives: ' . Helpers::yamlStr($objectivesText);
+            }
         }
-        if ($secDesc) {
-            $fm[] = 'description: ' . Helpers::yamlStr($secDesc);
-        }
-        if ($objectivesText) {
-            $fm[] = 'learning_objectives: ' . Helpers::yamlStr($objectivesText);
-        }
+        // redirect: is core Grav functionality (not Helios-specific) — a body-less section
+        // with no redirect would otherwise render blank in any Grav site, portable or not.
         if (!$secBody && $pages) {
             $firstSlug = Helpers::slugify($pages[0][0]);
             $fm[] = 'redirect: /section-' . $secNum . '/' . $firstSlug;
@@ -440,18 +492,37 @@ class ZipBuilder
         $lines[] = '';
         $lines[] = 'Next Steps';
         $lines[] = '----------';
-        $lines[] = '  1. Copy the book folder from inside the extracted pages folder into';
-        $lines[] = '     your Grav Helios Open Reader installation\'s user/pages/ directory';
-        $lines[] = '  2. Review this file for any warnings or manual fixes needed';
+        if ($this->portableMarkdown) {
+            $lines[] = '  1. Copy the book folder from inside the extracted pages folder into';
+            $lines[] = '     any Grav site\'s user/pages/ directory (no Helios plugin required),';
+            $lines[] = '     or adapt it for another Markdown-based platform (GitHub, Docsify,';
+            $lines[] = '     Docsify-This, Jekyll, Hugo, etc.)';
+            $lines[] = '  2. Review this file for any warnings or manual fixes needed';
+        } else {
+            $lines[] = '  1. Copy the book folder from inside the extracted pages folder into';
+            $lines[] = '     your Grav Helios Open Reader installation\'s user/pages/ directory';
+            $lines[] = '  2. Review this file for any warnings or manual fixes needed';
+        }
         $lines[] = '';
         $lines[] = 'Conversion Settings';
         $lines[] = '-------------------';
+        $lines[] = '  Format:  ' . ($this->portableMarkdown
+            ? 'Standard Markdown (no Helios shortcodes)'
+            : 'Grav Helios Open Reader (shortcodes + full frontmatter)');
         $lines[] = '  Images:  ' . ($this->skipImages
             ? 'kept as remote URLs — may break if source site goes offline'
             : 'downloaded and bundled in ZIP');
-        $lines[] = '  H5P:     ' . ($this->embedH5p
-            ? 'embedded via [h5p] shortcode' . ($this->allH5pEmbeds ? ' (see H5P Embeds section below)' : '')
-            : 'linked to original source');
+        if ($this->embedH5p) {
+            $h5pText = $this->portableMarkdown
+                ? 'embedded via a plain <iframe> + H5P\'s own resizer script'
+                : 'embedded via [h5p] shortcode';
+            if ($this->allH5pEmbeds) {
+                $h5pText .= ' (see H5P Embeds section below)';
+            }
+        } else {
+            $h5pText = 'linked to original source';
+        }
+        $lines[] = '  H5P:     ' . $h5pText;
         $lines[] = '  YouTube: left as external links — Pressbooks exports do not include video URLs';
 
         if ($this->warnings) {
@@ -481,10 +552,16 @@ class ZipBuilder
         $lines[] = '';
         $lines[] = 'Media Support';
         $lines[] = '-------------';
-        $lines[] = '  Helios Open Reader supports embedded video, audio, and H5P activities,';
-        $lines[] = '  but converted Pressbooks content may contain links to these items rather';
-        $lines[] = '  than actual embeds. Review each page and replace links with the appropriate';
-        $lines[] = '  shortcode where needed (e.g. [h5p url="..."] for H5P activities).';
+        if ($this->portableMarkdown) {
+            $lines[] = '  YouTube videos are left as plain links in this format. H5P activities are';
+            $lines[] = '  embedded as real <iframe> elements when "Embed H5P activities" is enabled;';
+            $lines[] = '  otherwise they are left as links to the original source.';
+        } else {
+            $lines[] = '  Helios Open Reader supports embedded video, audio, and H5P activities,';
+            $lines[] = '  but converted Pressbooks content may contain links to these items rather';
+            $lines[] = '  than actual embeds. Review each page and replace links with the appropriate';
+            $lines[] = '  shortcode where needed (e.g. [h5p url="..."] for H5P activities).';
+        }
 
         if ($this->allH5pEmbeds) {
             $lines[] = '';

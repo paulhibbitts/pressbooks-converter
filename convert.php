@@ -50,9 +50,10 @@ if (function_exists('finfo_open')) {
 }
 
 $html       = file_get_contents($_FILES['xhtml']['tmp_name']);
-$skipImages = !empty($_POST['skip_images']);
-$figureHtml = !empty($_POST['figure_html']);
-$embedH5p   = !empty($_POST['embed_h5p']);
+$skipImages       = !empty($_POST['skip_images']);
+$figureHtml       = !empty($_POST['figure_html']);
+$embedH5p         = !empty($_POST['embed_h5p']);
+$portableMarkdown = !empty($_POST['portable_markdown']);
 
 // Parse structure
 try {
@@ -86,7 +87,7 @@ if (!empty($_FILES['cover_image']['tmp_name']) && $_FILES['cover_image']['error'
 
 // Convert and build zip
 try {
-    $builder = new ZipBuilder($parser, $skipImages, $figureHtml, $embedH5p);
+    $builder = new ZipBuilder($parser, $skipImages, $figureHtml, $embedH5p, $portableMarkdown);
     if ($coverImageData !== null) {
         $builder->setCoverImage($coverImageData, $coverImageFilename);
     }

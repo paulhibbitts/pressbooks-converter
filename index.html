@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Convert a Pressbooks XHTML export into portable Markdown pages for Grav Helios Open Reader, built on the open-source Grav CMS.">
+<meta name="description" content="Convert a Pressbooks XHTML export to Markdown pages for Grav Helios Open Reader — or standard, portable Markdown for any platform.">
 <link rel="canonical" href="https://pressbooks-converter.hibbittsdesign.org/">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://pressbooks-converter.hibbittsdesign.org/">
 <meta property="og:title" content="Pressbooks → Grav Helios Open Reader">
-<meta property="og:description" content="Convert a Pressbooks XHTML export into portable Markdown pages for Grav Helios Open Reader, built on the open-source Grav CMS.">
+<meta property="og:description" content="Convert a Pressbooks XHTML export to Markdown pages for Grav Helios Open Reader — or standard, portable Markdown for any platform.">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Pressbooks → Grav Helios Open Reader">
-<meta name="twitter:description" content="Convert a Pressbooks XHTML export into portable Markdown pages for Grav Helios Open Reader, built on the open-source Grav CMS.">
+<meta name="twitter:description" content="Convert a Pressbooks XHTML export to Markdown pages for Grav Helios Open Reader — or standard, portable Markdown for any platform.">
 <title>Pressbooks → Grav Helios Open Reader</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><style>path{stroke:%232c2a27}@media (prefers-color-scheme:dark){path{stroke:%23e8e6e3}}</style><path d='M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4'/><path d='M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -146,7 +146,7 @@
 
   <div class="max-w-[68ch] mx-auto">
 
-  <p class="text-[15px] text-stone-500 dark:text-stone-400 mb-5 leading-relaxed"><a href="https://www.hibbittsdesign.org/Grav-Helios-Open-Reader-3560615470e080a79958c9c7dcd5d9a1" class="text-blue-800 dark:text-blue-400 underline underline-offset-2">Grav Helios Open Reader</a> <strong>gives your book or guide a better reading experience, built for the web</strong> – and gives you direct access to the content behind it: portable, future-friendly Markdown files ready for the 5Rs (retain, reuse, revise, remix, redistribute), no database, no WordPress or Pressbooks hosting to maintain. Because Pressbooks exports follow a single, consistent format, conversions are typically a fairly close, faithful match to your original book.</p>
+  <p class="text-[15px] text-stone-500 dark:text-stone-400 mb-5 leading-relaxed"><a href="https://www.hibbittsdesign.org/Grav-Helios-Open-Reader-3560615470e080a79958c9c7dcd5d9a1" class="text-blue-800 dark:text-blue-400 underline underline-offset-2">Grav Helios Open Reader</a> <strong>gives your book or guide a better reading experience, built for the web</strong> – and gives you direct access to the content behind it: portable, future-friendly Markdown files ready for the 5Rs (retain, reuse, revise, remix, redistribute), no database, no WordPress or Pressbooks hosting to maintain. Because Pressbooks exports follow a single, consistent format, conversions are typically a fairly close, faithful match to your original book. Prefer output with no Helios dependency at all? Turn on <strong>Standard Markdown</strong> below for plain Markdown that also works on GitHub-rendered pages, Docsify, Docsify-This, Jekyll, and Hugo.</p>
 
   <p class="text-[15px] text-stone-500 dark:text-stone-400 mb-5 leading-relaxed">For readers, that means a clean, distraction-free layout with light and dark mode, structured sections and chapters, and purpose-built callout blocks for objectives, definitions, and key takeaways – a more modern experience than a PDF or a scanned book, designed to be enjoyable.</p>
 
@@ -234,6 +234,16 @@
           Embed H5P activities
         </label>
         <span class="text-xs text-stone-500 dark:text-stone-400 pl-[21px]">Replace H5P placeholder links with embedded shortcodes. A fallback link and <code>h5p-embeds.txt</code> are included in the ZIP so you can verify each embed URL before installing. Requires the book to remain publicly accessible at its original Pressbooks URL.</span>
+        <div class="mt-3 border border-blue-200 dark:border-blue-900 rounded-md px-3 pt-2 pb-3 bg-blue-50/50 dark:bg-[#142f49]/20">
+          <p class="text-xs font-medium text-stone-500 dark:text-stone-400 mb-2">Output Format
+            <span class="inline-block text-[10px] leading-[1.3] font-semibold px-[6px] py-[2px] rounded-full bg-[#cee9fb] dark:bg-[#142f49] text-[#2c4457] dark:text-[#9fbad0] align-middle ml-1 tracking-[0.02em]">NEW</span>
+          </p>
+          <label class="flex items-center gap-[7px] text-[15px] cursor-pointer">
+            <input type="checkbox" name="portable_markdown" value="1">
+            Standard Markdown
+          </label>
+          <span class="block text-xs text-stone-500 dark:text-stone-400 pl-[21px]">Skip Helios-specific shortcodes in favor of standard Markdown and GitHub-style alert blocks – works in plain Grav and other Markdown platforms (GitHub-rendered pages, Docsify, Docsify-This, Jekyll, and Hugo), not just Grav Helios Open Reader.</span>
+        </div>
       </div>
 
       <div class="flex items-center gap-3 flex-wrap">
@@ -257,7 +267,7 @@
     <div class="pv-panel" id="preview-panel">
       <div class="pv-panel-head">
         <span class="pv-label">Preview</span>
-        <span class="pv-note">Sample pages, not final Grav Helios styling</span>
+        <span class="pv-note" id="preview-note">Sample pages, not final Grav Helios styling</span>
       </div>
       <div class="pv-tabs" id="preview-tabs"></div>
       <div class="pv-frame">
@@ -327,6 +337,7 @@ const previewTabs     = document.getElementById('preview-tabs');
 const previewPath     = document.getElementById('preview-path');
 const previewContent  = document.getElementById('preview-content');
 const previewViewToggle = document.getElementById('preview-view-toggle');
+const previewNote      = document.getElementById('preview-note');
 
 function formatBytes(b) {
   if (b < 1024) return b + ' B';
@@ -531,6 +542,31 @@ function extractYouTubeId(url) {
   return match ? match[1] : null;
 }
 
+// Standard Markdown mode uses GFM-style alert blockquotes ("> [!TIP] ...", "> [!IMPORTANT] ...")
+// instead of bracket shortcodes – marked.js parses these as plain blockquotes with the literal
+// "[!TIP]" text inside, it doesn't know to style them. Post-process the already-rendered HTML:
+// find blockquotes that start with one of these markers and swap them for a styled callout,
+// mapped onto this app's existing two-tone callout palette (default / gold).
+const PORTABLE_ALERT_STYLES = { TIP: '', NOTE: '', WARNING: 'gold', IMPORTANT: 'gold' };
+function renderCallouts(html) {
+  const container = document.createElement('div');
+  container.innerHTML = html;
+  container.querySelectorAll('blockquote').forEach(blockquote => {
+    const firstParagraph = blockquote.querySelector('p');
+    if (!firstParagraph) return;
+    const calloutMatch = firstParagraph.innerHTML.match(/^\[!(TIP|NOTE|WARNING|IMPORTANT)\]\s*/i);
+    if (!calloutMatch) return;
+    const alertType  = calloutMatch[1].toUpperCase();
+    const styleClass = PORTABLE_ALERT_STYLES[alertType] ? ` ${PORTABLE_ALERT_STYLES[alertType]}` : '';
+    firstParagraph.innerHTML = firstParagraph.innerHTML.slice(calloutMatch[0].length);
+    const callout = document.createElement('div');
+    callout.className = `pv-callout${styleClass}`;
+    callout.innerHTML = `<span class="pv-lbl">${alertType}</span>` + blockquote.innerHTML;
+    blockquote.replaceWith(callout);
+  });
+  return container.innerHTML;
+}
+
 // Most images stay as full remote URLs (skip_images is on by default) and the browser loads
 // them directly – no handling needed. The exception is a local filename left behind when a
 // download succeeded (skip_images off); the server already embeds those it can as a base64
@@ -582,7 +618,7 @@ function renderCurrentView() {
     return;
   }
 
-  previewContent.innerHTML = replaceLocalImages(marked.parse(renderShortcodes(page.markdown)), page.images || {});
+  previewContent.innerHTML = renderCallouts(replaceLocalImages(marked.parse(renderShortcodes(page.markdown)), page.images || {}));
 }
 
 function showPreviewError(message) {
@@ -613,6 +649,9 @@ previewBtn.addEventListener('click', async () => {
     }
 
     previewPages = data.pages;
+    previewNote.textContent = formData.get('portable_markdown')
+      ? 'Sample pages — final appearance depends on where you publish this Markdown'
+      : 'Sample pages, not final Grav Helios styling';
     renderPreviewTabs();
     showPreviewPage(0);
     previewPanel.classList.add('open');

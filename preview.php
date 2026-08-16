@@ -28,8 +28,9 @@ if ($_FILES['xhtml']['size'] > MAX_UPLOAD_BYTES) {
 }
 
 $html       = file_get_contents($_FILES['xhtml']['tmp_name']);
-$skipImages = !empty($_POST['skip_images']);
-$figureHtml = !empty($_POST['figure_html']);
+$skipImages       = !empty($_POST['skip_images']);
+$figureHtml       = !empty($_POST['figure_html']);
+$portableMarkdown = !empty($_POST['portable_markdown']);
 
 try {
     $parser = new Parser($html);
@@ -37,7 +38,7 @@ try {
         throw new \Exception('No Pressbooks structure found in the uploaded file.');
     }
 
-    $builder = new ZipBuilder($parser, $skipImages, $figureHtml, false);
+    $builder = new ZipBuilder($parser, $skipImages, $figureHtml, false, $portableMarkdown);
     $zipPath = $builder->build();
     @unlink($zipPath); // preview only needs the in-memory pages, not the zip file itself
 } catch (\Throwable $e) {
